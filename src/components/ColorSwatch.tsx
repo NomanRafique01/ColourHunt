@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, ViewStyle } from 'react-native'
 import { APP_THEME } from '../constants/colors'
+import { s, vs, ms } from '../utils/scale'
 
 interface ColorSwatchProps {
   color: string
@@ -9,7 +10,7 @@ interface ColorSwatchProps {
   style?: ViewStyle
 }
 
-export function ColorSwatch({ color, size = 48, label, style }: ColorSwatchProps) {
+export function ColorSwatch({ color, size = s(48), label, style }: ColorSwatchProps) {
   return (
     <View style={[styles.container, style]}>
       <View
@@ -19,7 +20,7 @@ export function ColorSwatch({ color, size = 48, label, style }: ColorSwatchProps
             backgroundColor: color,
             width: size,
             height: size,
-            borderRadius: size > 80 ? 20 : 10,
+            borderRadius: size > s(80) ? s(20) : s(10),
           },
         ]}
       />
@@ -37,15 +38,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: APP_THEME.surfaceBorder,
     shadowColor: APP_THEME.shadowColor,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: vs(3) },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: s(6),
     elevation: 4,
   },
   label: {
     color: APP_THEME.textSecondary,
-    marginTop: 8,
-    fontSize: 12,
+    marginTop: vs(8),
+    fontSize: ms(12),
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.5,

@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import type { ReactNode } from 'react'
 import { APP_THEME } from '../constants/colors'
+import { s, vs, ms } from '../utils/scale'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'outline' | 'ghost'
 
@@ -80,20 +81,20 @@ export function Button({
 
 const styles = StyleSheet.create({
   baseContainer: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: vs(15),
+    paddingHorizontal: s(20),
+    borderRadius: s(12),
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    marginVertical: 5,
+    marginVertical: vs(5),
   },
   primaryContainer: {
     backgroundColor: APP_THEME.primary,
     shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: vs(4) },
     shadowOpacity: 0.35,
-    shadowRadius: 10,
+    shadowRadius: s(10),
     elevation: 6,
   },
   secondaryContainer: {
@@ -104,17 +105,17 @@ const styles = StyleSheet.create({
   successContainer: {
     backgroundColor: APP_THEME.primary,
     shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: vs(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: s(8),
     elevation: 5,
   },
   dangerContainer: {
     backgroundColor: APP_THEME.danger,
     shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: vs(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: s(8),
     elevation: 5,
   },
   outlineContainer: {
@@ -133,28 +134,28 @@ const styles = StyleSheet.create({
   },
   baseText: {
     color: APP_THEME.textInverted,
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '700',
     letterSpacing: 0.3,
   },
   textWithIcon: {
-    marginLeft: 8,
+    marginLeft: s(8),
   },
   secondaryText: {
     color: APP_THEME.text,
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '600',
     letterSpacing: 0.3,
   },
   outlineText: {
     color: APP_THEME.primary,
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '700',
     letterSpacing: 0.3,
   },
   ghostText: {
     color: APP_THEME.primary,
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '600',
     letterSpacing: 0.3,
   },

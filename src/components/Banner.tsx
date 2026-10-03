@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, ViewStyle } from 'react-native'
 import { APP_THEME } from '../constants/colors'
+import { s, vs, ms } from '../utils/scale'
 
 export type BannerVariant = 'info' | 'warning' | 'danger' | 'success'
 
@@ -46,17 +47,17 @@ export function Banner({ message, variant = 'warning', style }: BannerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    paddingVertical: vs(12),
+    paddingHorizontal: s(16),
+    borderRadius: s(10),
     borderWidth: 1,
-    marginVertical: 8,
+    marginVertical: vs(8),
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
     color: APP_THEME.text,
-    fontSize: 14,
+    fontSize: ms(14),
     fontWeight: '600',
     textAlign: 'center',
   },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  View, Text, StyleSheet, TouchableOpacity, Dimensions,
+  View, Text, StyleSheet, TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -10,10 +10,9 @@ import { Button } from '../components/Button'
 import { APP_THEME } from '../constants/colors'
 import { usePlayerStore } from '../store/player'
 import { useGameStore } from '../store/game'
+import { s, vs, ms } from '../utils/scale'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Camera'>
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 export default function CameraScreen() {
   const navigation = useNavigation<NavigationProp>()
@@ -116,8 +115,8 @@ const styles = StyleSheet.create({
   previewBox: {
     flex: 1,
     backgroundColor: APP_THEME.backgroundSoft,
-    margin: 16,
-    borderRadius: 18,
+    margin: s(16),
+    borderRadius: s(18),
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
@@ -127,92 +126,92 @@ const styles = StyleSheet.create({
   liveCameraPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: s(24),
   },
-  cameraIcon: { fontSize: 60, marginBottom: 16 },
+  cameraIcon: { fontSize: ms(60), marginBottom: vs(16) },
   cameraPlaceholderText: {
     color: APP_THEME.text,
-    fontSize: 18,
+    fontSize: ms(18),
     fontWeight: '700',
     textAlign: 'center',
   },
   cameraHint: {
     color: APP_THEME.textMuted,
-    fontSize: 13,
+    fontSize: ms(13),
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: vs(8),
   },
   capturedContainer: {
     flex: 1,
     width: '100%',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: s(16),
   },
   capturedPhotoSim: {
     flex: 1,
     backgroundColor: APP_THEME.surface,
-    borderRadius: 14,
+    borderRadius: s(14),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
   },
-  capturedPhotoIcon: { fontSize: 64, marginBottom: 12 },
+  capturedPhotoIcon: { fontSize: ms(64), marginBottom: vs(12) },
   capturedPhotoText: {
     color: APP_THEME.textSecondary,
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '600',
   },
   analysisCard: {
     backgroundColor: APP_THEME.surface,
-    padding: 14,
-    borderRadius: 12,
-    marginTop: 12,
+    padding: s(14),
+    borderRadius: s(12),
+    marginTop: vs(12),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
     alignItems: 'center',
   },
   analyzingText: {
     color: APP_THEME.primary,
-    fontSize: 14,
+    fontSize: ms(14),
     fontWeight: '700',
   },
   scoreRow: { flexDirection: 'row', alignItems: 'center' },
-  scoreLabel: { color: APP_THEME.textSecondary, fontSize: 14, fontWeight: '600' },
-  scoreValue: { color: APP_THEME.primary, fontSize: 16, fontWeight: '900' },
-  scoreTag:   { color: APP_THEME.textMuted, fontSize: 13, fontWeight: '500' },
+  scoreLabel: { color: APP_THEME.textSecondary, fontSize: ms(14), fontWeight: '600' },
+  scoreValue: { color: APP_THEME.primary, fontSize: ms(16), fontWeight: '900' },
+  scoreTag:   { color: APP_THEME.textMuted, fontSize: ms(13), fontWeight: '500' },
   controlsContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: s(24),
+    paddingBottom: vs(24),
   },
   reviewActions: { width: '100%' },
   captureActions: { alignItems: 'center' },
   shutterButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: s(80),
+    height: s(80),
+    borderRadius: s(40),
     borderWidth: 3,
     borderColor: APP_THEME.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: vs(8),
     shadowColor: APP_THEME.shadowColorRed,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowRadius: s(12),
     elevation: 8,
   },
   shutterInner: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: s(62),
+    height: s(62),
+    borderRadius: s(31),
     backgroundColor: APP_THEME.primary,
   },
   shutterLabel: {
     color: APP_THEME.textMuted,
-    fontSize: 12,
+    fontSize: ms(12),
     fontWeight: '600',
-    marginBottom: 14,
+    marginBottom: vs(14),
   },
   cancelButton: { width: '100%' },
 })

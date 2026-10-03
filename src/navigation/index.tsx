@@ -1,4 +1,5 @@
 import React from 'react'
+import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -39,11 +40,13 @@ const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> 
 
 const Tab = createBottomTabNavigator<TabParamList>()
 
+const TAB_INACTIVE_COLOR = '#5C5C66' // Meets 4.5:1 contrast ratio against white
+
 function MainTabs() {
   const insets = useSafeAreaInsets()
 
   // Fixed content area + device system nav bar inset
-  const TAB_CONTENT_HEIGHT = 56
+  const TAB_CONTENT_HEIGHT = 60
   const tabBarHeight = TAB_CONTENT_HEIGHT + insets.bottom
 
   return (
@@ -58,8 +61,8 @@ function MainTabs() {
             borderTopWidth: 1,
             borderTopColor: APP_THEME.surfaceBorder,
             height: tabBarHeight,
-            paddingBottom: insets.bottom,
-            paddingTop: 4,
+            paddingBottom: insets.bottom + 4,
+            paddingTop: 6,
             shadowColor: COLORS.gray400,
             shadowOffset: { width: 0, height: -3 },
             shadowOpacity: 0.08,
@@ -67,19 +70,33 @@ function MainTabs() {
             elevation: 12,
           },
           tabBarActiveTintColor: APP_THEME.primary,
-          tabBarInactiveTintColor: APP_THEME.textMuted,
+          tabBarInactiveTintColor: TAB_INACTIVE_COLOR,
           tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: '600',
+            fontSize: 12,
+            fontWeight: '700',
             marginTop: 2,
           },
           tabBarIcon: ({ color, focused }) =>
             icons ? (
-              <Ionicons
-                name={focused ? icons.active : icons.inactive}
-                size={24}
-                color={color}
-              />
+              <View style={{ alignItems: 'center', justifyContent: 'center', width: 44, height: 32 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: focused ? COLORS.red100 : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons
+                    name={focused ? icons.active : icons.inactive}
+                    size={24}
+                    color={color}
+                  />
+                </View>
+                {/* dot removed – pill behind icon is sufficient indicator */}
+              </View>
             ) : null,
         }
       }}

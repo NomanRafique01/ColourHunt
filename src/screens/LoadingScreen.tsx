@@ -6,16 +6,18 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RootStackParamList } from '../types/navigation'
 import { APP_THEME, COLORS } from '../constants/colors'
+import { s, vs, ms, w, h } from '../utils/scale'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Loading'>
 
 const cameraIcon = require('../../assets/icon.png')
-const loadingArtwork = require('../../assets/assets bottom fro loading page.png')
+const loadingArtwork = require('../../assets/loading-artwork.png')
 
 export default function LoadingScreen() {
   const navigation = useNavigation<NavigationProp>()
+
   useEffect(() => {
-    const transition = setTimeout(() => navigation.replace('Home'), 8000)
+    const transition = setTimeout(() => navigation.replace('MainTabs'), 2500)
 
     return () => {
       clearTimeout(transition)
@@ -41,9 +43,10 @@ export default function LoadingScreen() {
           </View>
         </View>
 
-        <View style={styles.artworkFrame} pointerEvents="none">
+          <View style={styles.artworkFrame} pointerEvents="none">
           <Image source={loadingArtwork} style={styles.artwork} resizeMode="contain" />
         </View>
+
       </View>
     </SafeAreaView>
   )
@@ -52,15 +55,38 @@ export default function LoadingScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: APP_THEME.background },
   page: { flex: 1, overflow: 'hidden', alignItems: 'center', backgroundColor: APP_THEME.background },
-  topAccent: { position: 'absolute', top: -64, left: -64, width: 204, height: 150, backgroundColor: APP_THEME.primary, borderBottomRightRadius: 156, transform: [{ rotate: '-8deg' }] },
-  bottomAccent: { position: 'absolute', right: -112, bottom: -112, width: 224, height: 224, borderRadius: 112, backgroundColor: APP_THEME.primary },
-  brand: { alignItems: 'center', zIndex: 2, paddingTop: 58 },
-  logo: { width: 122, height: 122 },
-  wordmark: { color: COLORS.gray900, fontSize: 31, fontWeight: '800', letterSpacing: -1.4, marginTop: 8 },
+  topAccent: {
+    position: 'absolute',
+    top: vs(-64),
+    left: s(-64),
+    width: s(204),
+    height: vs(150),
+    backgroundColor: APP_THEME.primary,
+    borderBottomRightRadius: s(156),
+    transform: [{ rotate: '-8deg' }],
+  },
+  bottomAccent: {
+    position: 'absolute',
+    right: s(-112),
+    bottom: vs(-112),
+    width: s(224),
+    height: s(224),
+    borderRadius: s(112),
+    backgroundColor: APP_THEME.primary,
+  },
+  brand: { alignItems: 'center', zIndex: 2, paddingTop: vs(58) },
+  logo: { width: s(122), height: s(122) },
+  wordmark: {
+    color: COLORS.gray900,
+    fontSize: ms(31),
+    fontWeight: '800',
+    letterSpacing: -1.4,
+    marginTop: vs(8),
+  },
   wordmarkAccent: { color: APP_THEME.primary },
-  taglineRow: { flexDirection: 'row', alignItems: 'center', marginTop: 17 },
-  tagline: { color: APP_THEME.textSecondary, fontSize: 12, fontWeight: '500' },
-  taglineDot: { color: APP_THEME.primary, fontSize: 13, marginHorizontal: 9 },
-  artworkFrame: { position: 'absolute', left: 0, right: 0, bottom: 145, height: 430, alignItems: 'center', justifyContent: 'center' },
-  artwork: { width: 430, height: 700 },
+  taglineRow: { flexDirection: 'row', alignItems: 'center', marginTop: vs(17) },
+  tagline: { color: APP_THEME.textSecondary, fontSize: ms(12), fontWeight: '500' },
+  taglineDot: { color: APP_THEME.primary, fontSize: ms(13), marginHorizontal: s(9) },
+  artworkFrame: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-end', zIndex: 1 },
+  artwork: { width: w(1.0), height: h(0.75) },
 })

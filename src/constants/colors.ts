@@ -18,7 +18,7 @@ export const COLORS = {
   red200: '#FFBCC2',
   red300: '#FF7A85',
   red400: '#F03040',
-  red500: '#E8192C',   // brand primary - Crimson
+  red500: '#E40C1A',   // brand primary - matches the camera icon
   red600: '#C41225',
   red700: '#9B0E1D',
   red800: '#6B0814',
@@ -65,8 +65,8 @@ export const APP_THEME = {
   primaryLight:      COLORS.red400,
   primarySubtle:     COLORS.red100,
   primaryDisabled:   COLORS.red200,
-  primaryGlow:       'rgba(232, 25, 44, 0.15)',
-  primaryGlowStrong: 'rgba(232, 25, 44, 0.30)',
+  primaryGlow:       'rgba(228, 12, 26, 0.15)',
+  primaryGlowStrong: 'rgba(228, 12, 26, 0.30)',
 
   // Inputs
   inputBg:           COLORS.pure_white,

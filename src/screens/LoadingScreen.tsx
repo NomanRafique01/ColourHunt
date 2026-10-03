@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: APP_THEME.background },
   page: { flex: 1, overflow: 'hidden', alignItems: 'center', backgroundColor: APP_THEME.background },
   topAccent: { position: 'absolute', top: -64, left: -64, width: 204, height: 150, backgroundColor: APP_THEME.primary, borderBottomRightRadius: 156, transform: [{ rotate: '-8deg' }] },
-  bottomAccent: { position: 'absolute', right: -58, bottom: -48, width: 190, height: 146, backgroundColor: APP_THEME.primary, borderTopLeftRadius: 190 },
+  bottomAccent: { position: 'absolute', right: -112, bottom: -112, width: 224, height: 224, borderRadius: 112, backgroundColor: APP_THEME.primary },
   brand: { alignItems: 'center', zIndex: 2, paddingTop: 58 },
   logo: { width: 122, height: 122 },
   wordmark: { color: COLORS.gray900, fontSize: 31, fontWeight: '800', letterSpacing: -1.4, marginTop: 8 },

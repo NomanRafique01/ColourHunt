@@ -1,10 +1,17 @@
 import React from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import type { RootStackParamList } from '../types/navigation'
-import { APP_THEME } from '../constants/colors'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import type { RootStackParamList, TabParamList } from '../types/navigation'
+import { APP_THEME, COLORS } from '../constants/colors'
 
-import HomeScreen from '../screens/HomeScreen'
+// Screens
 import LoadingScreen from '../screens/LoadingScreen'
+import HomeScreen from '../screens/HomeScreen'
+import RoomsScreen from '../screens/RoomsScreen'
+import HistoryScreen from '../screens/HistoryScreen'
+import SettingsScreen from '../screens/SettingsScreen'
 import CreateRoomScreen from '../screens/CreateRoomScreen'
 import JoinRoomScreen from '../screens/JoinRoomScreen'
 import LobbyScreen from '../screens/LobbyScreen'
@@ -13,6 +20,82 @@ import CameraScreen from '../screens/CameraScreen'
 import ReviewScreen from '../screens/ReviewScreen'
 import ResultScreen from '../screens/ResultScreen'
 
+// ──────────────────────────────────────────────
+// Tab icon map — filled when active, outline when inactive
+// ──────────────────────────────────────────────
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name']
+
+const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
+  Home:     { active: 'home',     inactive: 'home-outline' },
+  Rooms:    { active: 'people',   inactive: 'people-outline' },
+  History:  { active: 'time',     inactive: 'time-outline' },
+  Settings: { active: 'settings', inactive: 'settings-outline' },
+}
+
+// ──────────────────────────────────────────────
+// Bottom Tab Navigator
+// ──────────────────────────────────────────────
+
+const Tab = createBottomTabNavigator<TabParamList>()
+
+function MainTabs() {
+  const insets = useSafeAreaInsets()
+
+  // Fixed content area + device system nav bar inset
+  const TAB_CONTENT_HEIGHT = 56
+  const tabBarHeight = TAB_CONTENT_HEIGHT + insets.bottom
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => {
+        const icons = TAB_ICONS[route.name]
+        return {
+          headerShown: false,
+          tabBarHideOnKeyboard: true,
+          tabBarStyle: {
+            backgroundColor: COLORS.pure_white,
+            borderTopWidth: 1,
+            borderTopColor: APP_THEME.surfaceBorder,
+            height: tabBarHeight,
+            paddingBottom: insets.bottom,
+            paddingTop: 4,
+            shadowColor: COLORS.gray400,
+            shadowOffset: { width: 0, height: -3 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            elevation: 12,
+          },
+          tabBarActiveTintColor: APP_THEME.primary,
+          tabBarInactiveTintColor: APP_THEME.textMuted,
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: 2,
+          },
+          tabBarIcon: ({ color, focused }) =>
+            icons ? (
+              <Ionicons
+                name={focused ? icons.active : icons.inactive}
+                size={24}
+                color={color}
+              />
+            ) : null,
+        }
+      }}
+    >
+      <Tab.Screen name="Home"     component={HomeScreen} />
+      <Tab.Screen name="Rooms"    component={RoomsScreen} />
+      <Tab.Screen name="History"  component={HistoryScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
+    </Tab.Navigator>
+  )
+}
+
+// ──────────────────────────────────────────────
+// Root Stack Navigator
+// ──────────────────────────────────────────────
+
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 export function RootNavigator() {
@@ -20,17 +103,11 @@ export function RootNavigator() {
     <Stack.Navigator
       initialRouteName="Loading"
       screenOptions={{
-        headerStyle: {
-          backgroundColor: APP_THEME.surface,
-        },
+        headerStyle: { backgroundColor: APP_THEME.surface },
         headerTintColor: APP_THEME.text,
-        headerTitleStyle: {
-          fontWeight: '700',
-        },
+        headerTitleStyle: { fontWeight: '700' },
         headerShadowVisible: false,
-        contentStyle: {
-          backgroundColor: APP_THEME.background,
-        },
+        contentStyle: { backgroundColor: APP_THEME.background },
       }}
     >
       <Stack.Screen
@@ -39,19 +116,19 @@ export function RootNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Home"
-        component={HomeScreen}
+        name="MainTabs"
+        component={MainTabs}
         options={{ headerShown: false }}
       />
       <Stack.Screen
         name="CreateRoom"
         component={CreateRoomScreen}
-        options={{ title: 'Create Room' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="JoinRoom"
         component={JoinRoomScreen}
-        options={{ title: 'Join Room' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Lobby"

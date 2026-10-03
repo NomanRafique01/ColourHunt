@@ -17,9 +17,16 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RootStackParamList } from '../types/navigation'
 import { APP_THEME, COLORS } from '../constants/colors'
+import { useRoomStore } from '../store/room'
 import { s, vs, ms } from '../utils/scale'
-
-const cameraIcon = require('../../assets/icon.png')
+import { FlatLogoMark } from '../../assets/svg/FlatLogoMark'
+import { CopyIcon } from '../../assets/svg/CopyIcon'
+import { ShareIcon } from '../../assets/svg/ShareIcon'
+import { HostCrownBadge } from '../../assets/svg/HostCrownBadge'
+import { SlidersIcon } from '../../assets/svg/SlidersIcon'
+import { StopwatchIcon } from '../../assets/svg/StopwatchIcon'
+import { RoundCounterIcon } from '../../assets/svg/RoundCounterIcon'
+import { PeopleDotsIcon } from '../../assets/svg/PeopleDotsIcon'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateRoom'>
 
@@ -89,7 +96,7 @@ function PulsingDot({ color = APP_THEME.primary }: { color?: string }) {
 // ─── Player Slot ──────────────────────────────────────────────────────────────
 
 function PlayerSlot({ filled, index }: { filled: boolean; index: number }) {
-  const pc = PLAYER_COLORS[index]
+  const pc = PLAYER_COLORS[index % PLAYER_COLORS.length]
   const isHost = index === 0 && filled
 
   return (
@@ -104,6 +111,11 @@ function PlayerSlot({ filled, index }: { filled: boolean; index: number }) {
 
       {filled ? (
         <View style={slotStyles.filledContent}>
+          {isHost && (
+            <View style={slotStyles.crownBadge}>
+              <HostCrownBadge size={s(13)} color={APP_THEME.primary} />
+            </View>
+          )}
           {/* Avatar circle */}
           <View style={[slotStyles.avatarFilled, { backgroundColor: pc.border }]}>
             <Text style={slotStyles.avatarInitial}>
@@ -132,22 +144,67 @@ function PlayerSlot({ filled, index }: { filled: boolean; index: number }) {
   )
 }
 
-// ─── Settings Chip (read-only) ────────────────────────────────────────────────
+// ─── Editable Setting Stepper Card ───────────────────────────────────────────
 
-function SettingChip({
-  iconName,
-  value,
+function EditableSettingCard({
+  icon,
   label,
+  rangeLabel,
+  value,
+  onDecrement,
+  onIncrement,
+  canDecrement,
+  canIncrement,
 }: {
-  iconName: React.ComponentProps<typeof Ionicons>['name']
-  value: string
+  icon: React.ReactNode
   label: string
+  rangeLabel: string
+  value: string
+  onDecrement: () => void
+  onIncrement: () => void
+  canDecrement: boolean
+  canIncrement: boolean
 }) {
   return (
-    <View style={chipStyles.wrap}>
-      <Ionicons name={iconName} size={s(16)} color={APP_THEME.primary} />
-      <Text style={chipStyles.value}>{value}</Text>
-      <Text style={chipStyles.label}>{label}</Text>
+    <View style={stepperCardStyles.card}>
+      <View style={stepperCardStyles.topRow}>
+        <View style={stepperCardStyles.labelWrap}>
+          {icon}
+          <Text style={stepperCardStyles.label}>{label}</Text>
+          <View style={stepperCardStyles.rangePill}>
+            <Text style={stepperCardStyles.rangeText}>{rangeLabel}</Text>
+          </View>
+        </View>
+        <SlidersIcon size={s(14)} color={APP_THEME.primary} />
+      </View>
+
+      <View style={stepperCardStyles.stepperRow}>
+        <TouchableOpacity
+          style={[stepperCardStyles.stepBtn, !canDecrement && stepperCardStyles.stepBtnDisabled]}
+          onPress={onDecrement}
+          disabled={!canDecrement}
+          activeOpacity={0.7}
+        >
+          <Text style={[stepperCardStyles.stepBtnSign, !canDecrement && stepperCardStyles.stepBtnSignDisabled]}>
+            –
+          </Text>
+        </TouchableOpacity>
+
+        <View style={stepperCardStyles.valuePill}>
+          <Text style={stepperCardStyles.valueText}>{value}</Text>
+        </View>
+
+        <TouchableOpacity
+          style={[stepperCardStyles.stepBtn, stepperCardStyles.stepBtnPlus, !canIncrement && stepperCardStyles.stepBtnDisabled]}
+          onPress={onIncrement}
+          disabled={!canIncrement}
+          activeOpacity={0.7}
+        >
+          <Text style={[stepperCardStyles.stepBtnSign, stepperCardStyles.stepBtnSignPlus, !canIncrement && stepperCardStyles.stepBtnSignDisabled]}>
+            +
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }
@@ -159,7 +216,15 @@ export default function CreateRoomScreen() {
   const insets      = useSafeAreaInsets()
   const [copied, setCopied]   = useState(false)
   const [roomCode]            = useState(() => generateRoomCode(5))
-  const filledSlots           = [true, false, false, false]
+
+  // Room store settings with live updates
+  const { maxPlayers, roundTimerSeconds, totalRounds, setSettings, setRoomCode } = useRoomStore()
+  const [playersLimit, setPlayersLimit] = useState(maxPlayers || 4)
+  const [timerLimit, setTimerLimit] = useState(roundTimerSeconds || 60)
+  const [roundsLimit, setRoundsLimit] = useState(totalRounds || 5)
+
+  // Live slots based on host's chosen player limit
+  const filledSlots = Array.from({ length: playersLimit }, (_, i) => i === 0)
 
   const slideY = useRef(new Animated.Value(40)).current
   const fadeIn = useRef(new Animated.Value(0)).current
@@ -170,6 +235,24 @@ export default function CreateRoomScreen() {
       Animated.timing(fadeIn, { toValue: 1, duration: 480, useNativeDriver: true }),
     ]).start()
   }, [])
+
+  const updatePlayers = (delta: number) => {
+    const next = Math.max(2, Math.min(8, playersLimit + delta))
+    setPlayersLimit(next)
+    setSettings({ maxPlayers: next })
+  }
+
+  const updateTimer = (delta: number) => {
+    const next = Math.max(30, Math.min(180, timerLimit + delta))
+    setTimerLimit(next)
+    setSettings({ roundTimerSeconds: next })
+  }
+
+  const updateRounds = (delta: number) => {
+    const next = Math.max(1, Math.min(10, roundsLimit + delta))
+    setRoundsLimit(next)
+    setSettings({ totalRounds: next })
+  }
 
   const handleCopy = () => {
     Clipboard.setString(roomCode)
@@ -187,6 +270,12 @@ export default function CreateRoomScreen() {
   }
 
   const handleEnterLobby = () => {
+    setRoomCode(roomCode)
+    setSettings({
+      maxPlayers: playersLimit,
+      roundTimerSeconds: timerLimit,
+      totalRounds: roundsLimit,
+    })
     navigation.navigate('Lobby', { code: roomCode, isHost: true })
   }
 
@@ -196,10 +285,10 @@ export default function CreateRoomScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
 
-      {/* ── Top Nav ── */}
+      {/* ── Top Nav with Flat Logo Mark ── */}
       <View style={styles.topNav}>
         <View style={styles.brandRow}>
-          <Image source={cameraIcon} style={styles.navLogo} resizeMode="contain" />
+          <FlatLogoMark size={s(36)} />
           <Text style={styles.navWordmark}>
             Colour<Text style={styles.navWordmarkAccent}>Hunt</Text>
           </Text>
@@ -233,7 +322,7 @@ export default function CreateRoomScreen() {
             Create <Text style={styles.pageTitleAccent}>Room</Text>
           </Text>
           <View style={styles.titleBar} />
-          <Text style={styles.pageSubtitle}>Share the code below with your friends to join</Text>
+          <Text style={styles.pageSubtitle}>Customize room settings and share code with friends</Text>
         </View>
 
         {/* ── Room Code Card ── */}
@@ -257,18 +346,14 @@ export default function CreateRoomScreen() {
               ))}
             </View>
 
-            {/* Copy + Share buttons */}
+            {/* Copy + Share buttons with 2px stroke SVG icons */}
             <View style={styles.codeActions}>
               <TouchableOpacity
                 style={styles.copyBtn}
                 onPress={handleCopy}
                 activeOpacity={0.75}
               >
-                <Ionicons
-                  name={copied ? 'checkmark' : 'copy-outline'}
-                  size={s(15)}
-                  color={COLORS.red700}
-                />
+                <CopyIcon size={s(15)} color={COLORS.red700} />
                 <Text style={styles.copyBtnText}>{copied ? 'Copied!' : 'Copy'}</Text>
               </TouchableOpacity>
 
@@ -277,14 +362,14 @@ export default function CreateRoomScreen() {
                 onPress={handleShare}
                 activeOpacity={0.85}
               >
-                <Ionicons name="share-social-outline" size={s(15)} color={COLORS.pure_white} />
+                <ShareIcon size={s(15)} color={COLORS.pure_white} />
                 <Text style={styles.shareBtnText}>Share</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* ── Lobby Status Card ── */}
+        {/* ── Lobby Status Card (Live Updates with Host Settings) ── */}
         <View style={styles.card}>
           <View style={[styles.cardAccent, { backgroundColor: APP_THEME.primary }]} />
           <View style={styles.cardBody}>
@@ -302,31 +387,69 @@ export default function CreateRoomScreen() {
 
             <View style={styles.divider} />
 
-            {/* Players count label */}
-            <Text style={styles.slotsLabel}>PLAYERS  1 / 4</Text>
+            {/* Players count label – Live Updates */}
+            <Text style={styles.slotsLabel}>PLAYERS  1 / {playersLimit}</Text>
 
-            {/* Player slots grid */}
-            <View style={styles.slotsRow}>
-              {filledSlots.map((filled, i) => (
-                <PlayerSlot key={i} filled={filled} index={i} />
-              ))}
-            </View>
+            {/* Player slots grid – Dynamically shows playersLimit slots */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.slotsScrollRow}>
+              <View style={styles.slotsRow}>
+                {filledSlots.map((filled, i) => (
+                  <View key={i} style={{ width: s(68) }}>
+                    <PlayerSlot filled={filled} index={i} />
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
 
-            {/* Settings chips (read-only) */}
-            <View style={styles.settingsRow}>
-              <SettingChip iconName="people-outline" value="4" label="Players" />
-              <View style={styles.settingsDivider} />
-              <SettingChip iconName="timer-outline" value="60s" label="Round" />
-              <View style={styles.settingsDivider} />
-              <SettingChip iconName="refresh-outline" value="5" label="Rounds" />
+            <View style={[styles.divider, { marginTop: vs(SP.sm) }]} />
+
+            {/* Editable Settings Steppers (Max Players, Timer, Rounds) */}
+            <Text style={[styles.slotsLabel, { marginBottom: vs(SP.xs) }]}>ROOM SETTINGS</Text>
+
+            <View style={styles.editableSettingsList}>
+              {/* Setting 1: Max Players */}
+              <EditableSettingCard
+                icon={<PeopleDotsIcon size={s(15)} color={APP_THEME.primary} />}
+                label="Max Players"
+                rangeLabel="2–8"
+                value={`${playersLimit}`}
+                canDecrement={playersLimit > 2}
+                canIncrement={playersLimit < 8}
+                onDecrement={() => updatePlayers(-1)}
+                onIncrement={() => updatePlayers(1)}
+              />
+
+              {/* Setting 2: Round Timer */}
+              <EditableSettingCard
+                icon={<StopwatchIcon size={s(15)} color={APP_THEME.primary} />}
+                label="Round Timer"
+                rangeLabel="30s–180s"
+                value={`${timerLimit}s`}
+                canDecrement={timerLimit > 30}
+                canIncrement={timerLimit < 180}
+                onDecrement={() => updateTimer(-15)}
+                onIncrement={() => updateTimer(15)}
+              />
+
+              {/* Setting 3: Total Rounds */}
+              <EditableSettingCard
+                icon={<RoundCounterIcon size={s(15)} color={APP_THEME.primary} />}
+                label="Total Rounds"
+                rangeLabel="1–10"
+                value={`${roundsLimit}`}
+                canDecrement={roundsLimit > 1}
+                canIncrement={roundsLimit < 10}
+                onDecrement={() => updateRounds(-1)}
+                onIncrement={() => updateRounds(1)}
+              />
             </View>
           </View>
         </View>
 
-        {/* ── Static Footer Hint ── */}
+        {/* ── Static Footer Hint (No fixed numbers) ── */}
         <View style={styles.footerNote}>
           <View style={styles.footerDot} />
-          <Text style={styles.footerNoteText}>2–4 PLAYERS · REAL-WORLD MULTIPLAYER</Text>
+          <Text style={styles.footerNoteText}>HOST SETS THE RULES · REAL-WORLD MULTIPLAYER</Text>
           <View style={styles.footerDot} />
         </View>
       </Animated.ScrollView>
@@ -601,6 +724,13 @@ const styles = StyleSheet.create({
     marginBottom: vs(SP.md),
   },
 
+  slotsScrollRow: {
+    paddingVertical: vs(2),
+  },
+  editableSettingsList: {
+    gap: vs(SP.xs),
+  },
+
   /* ── Settings chips row ── */
   settingsRow: {
     flexDirection: 'row',
@@ -652,6 +782,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     flexDirection: 'row',
+
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: APP_THEME.primary,
@@ -793,3 +924,96 @@ const chipStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 })
+
+// ─── Stepper Card Styles ──────────────────────────────────────────────────────
+
+const stepperCardStyles = StyleSheet.create({
+  card: {
+    backgroundColor: COLORS.red100,
+    borderRadius: s(RADIUS.chip),
+    padding: s(SP.sm),
+    marginBottom: vs(SP.xs),
+    borderWidth: 1,
+    borderColor: 'rgba(228, 12, 26, 0.15)',
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: vs(SP.xs),
+  },
+  labelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(6),
+  },
+  label: {
+    fontSize: ms(13),
+    fontWeight: '700',
+    color: COLORS.red900,
+  },
+  rangePill: {
+    backgroundColor: 'rgba(228, 12, 26, 0.08)',
+    paddingHorizontal: s(6),
+    paddingVertical: vs(2),
+    borderRadius: s(6),
+  },
+  rangeText: {
+    fontSize: ms(10),
+    fontWeight: '600',
+    color: COLORS.red600,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepBtn: {
+    width: s(36),
+    height: s(36),
+    borderRadius: s(18),
+    backgroundColor: COLORS.pure_white,
+    borderWidth: 1.5,
+    borderColor: APP_THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBtnPlus: {
+    backgroundColor: APP_THEME.primary,
+    borderColor: APP_THEME.primary,
+  },
+  stepBtnDisabled: {
+    borderColor: COLORS.red200,
+    backgroundColor: COLORS.pure_white,
+    opacity: 0.5,
+  },
+  stepBtnSign: {
+    fontSize: ms(20),
+    fontWeight: '800',
+    color: APP_THEME.primary,
+    lineHeight: ms(22),
+  },
+  stepBtnSignPlus: {
+    color: COLORS.pure_white,
+  },
+  stepBtnSignDisabled: {
+    color: COLORS.red300,
+  },
+  valuePill: {
+    paddingHorizontal: s(SP.md),
+    paddingVertical: vs(6),
+    borderRadius: s(RADIUS.chip),
+    backgroundColor: COLORS.pure_white,
+    borderWidth: 1,
+    borderColor: 'rgba(228, 12, 26, 0.15)',
+    minWidth: s(80),
+    alignItems: 'center',
+  },
+  valueText: {
+    fontSize: ms(15),
+    fontWeight: '800',
+    color: COLORS.red900,
+    letterSpacing: -0.2,
+  },
+})
+

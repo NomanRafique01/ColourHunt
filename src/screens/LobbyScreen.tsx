@@ -8,11 +8,15 @@ import type { RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RootStackParamList } from '../types/navigation'
 import { Button } from '../components/Button'
-import { APP_THEME } from '../constants/colors'
-import { MAX_PLAYERS, MIN_PLAYERS } from '../constants/game'
+import { APP_THEME, COLORS } from '../constants/colors'
+import { MIN_PLAYERS } from '../constants/game'
 import { useRoomStore } from '../store/room'
 import { usePlayerStore } from '../store/player'
 import { s, vs, ms } from '../utils/scale'
+import { HostCrownBadge } from '../../assets/svg/HostCrownBadge'
+import { PeopleDotsIcon } from '../../assets/svg/PeopleDotsIcon'
+import { StopwatchIcon } from '../../assets/svg/StopwatchIcon'
+import { RoundCounterIcon } from '../../assets/svg/RoundCounterIcon'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Lobby'>
 type LobbyRouteProp = RouteProp<RootStackParamList, 'Lobby'>
@@ -20,11 +24,12 @@ type LobbyRouteProp = RouteProp<RootStackParamList, 'Lobby'>
 export default function LobbyScreen() {
   const navigation = useNavigation<NavigationProp>()
   const route = useRoute<LobbyRouteProp>()
-  const { roomCode, setRoomStatus } = useRoomStore()
+  const { roomCode, setRoomStatus, maxPlayers, roundTimerSeconds, totalRounds } = useRoomStore()
   const { isHost } = usePlayerStore()
 
   const activeCode = route.params?.code || roomCode || 'ABCD'
   const isUserHost = route.params?.isHost ?? isHost
+  const effectiveMax = maxPlayers || 4
 
   const placeholderPlayers = [
     { id: '1', name: 'You',             isHost: isUserHost, isReady: true  },
@@ -34,7 +39,7 @@ export default function LobbyScreen() {
   ]
 
   const connectedCount = placeholderPlayers.filter((p) => p.name !== null).length
-  const canStart = connectedCount >= MIN_PLAYERS && connectedCount <= MAX_PLAYERS
+  const canStart = connectedCount >= MIN_PLAYERS && connectedCount <= effectiveMax
 
   const handleStartGame = () => {
     setRoomStatus('in_round')
@@ -50,7 +55,7 @@ export default function LobbyScreen() {
           <View style={styles.codeBadge}>
             <Text style={styles.codeText}>{activeCode}</Text>
           </View>
-          <Text style={styles.playerCount}>{connectedCount} / {MAX_PLAYERS} Players</Text>
+          <Text style={styles.playerCount}>{connectedCount} / {effectiveMax} Players</Text>
         </View>
 
         {/* Players card */}
@@ -76,12 +81,31 @@ export default function LobbyScreen() {
                   </View>
                   {filled && player.isHost ? (
                     <View style={styles.hostBadge}>
+                      <HostCrownBadge size={s(13)} color={COLORS.pure_white} />
                       <Text style={styles.hostBadgeText}>HOST</Text>
                     </View>
                   ) : null}
                 </View>
               )
             })}
+          </View>
+
+          {/* Host's Settings (Read-Only) */}
+          <View style={styles.rulesCard}>
+            <View style={styles.ruleItem}>
+              <PeopleDotsIcon size={s(14)} color={APP_THEME.primary} />
+              <Text style={styles.ruleLabel}>{effectiveMax} Players</Text>
+            </View>
+            <View style={styles.ruleDivider} />
+            <View style={styles.ruleItem}>
+              <StopwatchIcon size={s(14)} color={APP_THEME.primary} />
+              <Text style={styles.ruleLabel}>{roundTimerSeconds || 60}s Timer</Text>
+            </View>
+            <View style={styles.ruleDivider} />
+            <View style={styles.ruleItem}>
+              <RoundCounterIcon size={s(14)} color={APP_THEME.primary} />
+              <Text style={styles.ruleLabel}>{totalRounds || 5} Rounds</Text>
+            </View>
           </View>
 
           <View style={styles.actionsContainer}>
@@ -230,18 +254,49 @@ const styles = StyleSheet.create({
     fontSize: ms(14),
   },
   hostBadge: {
-    backgroundColor: APP_THEME.primarySubtle,
-    paddingHorizontal: s(10),
-    paddingVertical: vs(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(4),
+    backgroundColor: APP_THEME.primary,
+    paddingHorizontal: s(8),
+    paddingVertical: vs(3),
     borderRadius: s(6),
-    borderWidth: 1,
-    borderColor: APP_THEME.primary,
   },
   hostBadgeText: {
-    color: APP_THEME.primary,
+    color: COLORS.pure_white,
     fontSize: ms(10),
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+  },
+  rulesCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.red100,
+    borderRadius: s(10),
+    borderWidth: 1,
+    borderColor: 'rgba(228, 12, 26, 0.20)',
+    paddingVertical: vs(10),
+    paddingHorizontal: s(10),
+    marginTop: vs(8),
+    marginBottom: vs(14),
+  },
+  ruleItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: s(5),
+  },
+  ruleDivider: {
+    width: 1,
+    height: vs(18),
+    backgroundColor: 'rgba(228, 12, 26, 0.20)',
+  },
+  ruleLabel: {
+    fontSize: ms(11),
+    fontWeight: '700',
+    color: COLORS.red900,
   },
   actionsContainer: {
     marginTop: vs(4),

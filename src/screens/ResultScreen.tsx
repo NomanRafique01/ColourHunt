@@ -12,6 +12,7 @@ import { APP_THEME, GAME_COLORS } from '../constants/colors'
 import { useGameStore } from '../store/game'
 import { useRoomStore } from '../store/room'
 import { usePlayerStore } from '../store/player'
+import { s, vs, ms } from '../utils/scale'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Result'>
 
@@ -37,10 +38,11 @@ export default function ResultScreen() {
   }
 
   const handleLeave = () => {
+
     resetGame()
     resetRoom()
     resetPlayer()
-    navigation.navigate('Home')
+    navigation.navigate('MainTabs')
   }
 
   return (
@@ -59,7 +61,7 @@ export default function ResultScreen() {
             <Text style={styles.winnerLabel}>🥇 CHAMPION</Text>
             <Text style={styles.winnerName}>{winnerName}</Text>
             <View style={styles.swatchWrap}>
-              <ColorSwatch color={winnerColor} size={60} label={`${GAME_COLORS[0].name} Matched`} />
+              <ColorSwatch color={winnerColor} size={s(60)} label={`${GAME_COLORS[0].name} Matched`} />
             </View>
             <View style={styles.winnerTimeBadge}>
               <Text style={styles.winnerTimeLabel}>SUBMISSION TIME</Text>
@@ -109,130 +111,130 @@ const styles = StyleSheet.create({
     backgroundColor: APP_THEME.background,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: s(20),
+    paddingVertical: vs(20),
     justifyContent: 'center',
     flexGrow: 1,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   resultTag: {
     color: APP_THEME.primary,
-    fontSize: 11,
+    fontSize: ms(11),
     fontWeight: '700',
     letterSpacing: 3,
-    marginBottom: 6,
+    marginBottom: vs(6),
   },
   headingText: {
-    fontSize: 36,
+    fontSize: ms(36),
     fontWeight: '900',
     color: APP_THEME.text,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   titleAccent: {
-    width: 48,
-    height: 3,
+    width: s(48),
+    height: vs(3),
     backgroundColor: APP_THEME.primary,
     borderRadius: 2,
-    marginTop: 10,
+    marginTop: vs(10),
   },
   winnerCard: {
     backgroundColor: APP_THEME.surface,
-    padding: 24,
-    borderRadius: 18,
+    padding: s(24),
+    borderRadius: s(18),
     borderWidth: 1.5,
     borderColor: APP_THEME.primary,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: vs(20),
     shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: vs(4) },
     shadowOpacity: 0.2,
-    shadowRadius: 14,
+    shadowRadius: s(14),
     elevation: 6,
   },
   winnerLabel: {
     color: APP_THEME.primary,
-    fontSize: 12,
+    fontSize: ms(12),
     fontWeight: '800',
     letterSpacing: 2,
-    marginBottom: 6,
+    marginBottom: vs(6),
   },
   winnerName: {
     color: APP_THEME.text,
-    fontSize: 28,
+    fontSize: ms(28),
     fontWeight: '900',
-    marginBottom: 10,
+    marginBottom: vs(10),
   },
-  swatchWrap: { marginVertical: 10 },
+  swatchWrap: { marginVertical: vs(10) },
   winnerTimeBadge: {
-    marginTop: 10,
+    marginTop: vs(10),
     backgroundColor: APP_THEME.backgroundSoft,
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    borderRadius: 8,
+    paddingVertical: vs(8),
+    paddingHorizontal: s(18),
+    borderRadius: s(8),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
     alignItems: 'center',
   },
   winnerTimeLabel: {
     color: APP_THEME.textMuted,
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '700',
     letterSpacing: 1.5,
-    marginBottom: 2,
+    marginBottom: vs(2),
   },
   winnerTimeValue: {
     color: APP_THEME.text,
-    fontSize: 22,
+    fontSize: ms(22),
     fontWeight: '900',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   noWinnerCard: {
     backgroundColor: APP_THEME.surface,
-    padding: 24,
-    borderRadius: 18,
+    padding: s(24),
+    borderRadius: s(18),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
-  noWinnerIcon: { fontSize: 40, marginBottom: 10 },
+  noWinnerIcon: { fontSize: ms(40), marginBottom: vs(10) },
   noWinnerSubtext: {
     color: APP_THEME.textSecondary,
-    fontSize: 14,
+    fontSize: ms(14),
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: ms(22),
   },
   submissionsCard: {
     backgroundColor: APP_THEME.surface,
-    padding: 18,
-    borderRadius: 16,
+    padding: s(18),
+    borderRadius: s(16),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
-    marginBottom: 22,
+    marginBottom: vs(22),
   },
   cardTitle: {
     color: APP_THEME.textMuted,
-    fontSize: 11,
+    fontSize: ms(11),
     fontWeight: '700',
-    marginBottom: 14,
+    marginBottom: vs(14),
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
-  thumbnailRow: { flexDirection: 'row', gap: 12 },
+  thumbnailRow: { flexDirection: 'row', gap: s(12) },
   thumbnailBox: {
-    width: 100,
-    height: 120,
+    width: s(100),
+    height: vs(120),
     backgroundColor: APP_THEME.backgroundSoft,
-    borderRadius: 12,
+    borderRadius: s(12),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
+    padding: s(8),
   },
   winnerThumbnailBox: {
     borderColor: APP_THEME.primary,
@@ -240,27 +242,27 @@ const styles = StyleSheet.create({
     shadowColor: APP_THEME.shadowColorRed,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: s(6),
   },
   colorIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: s(12),
+    height: s(12),
+    borderRadius: s(6),
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: vs(8),
+    right: s(8),
   },
-  thumbnailIcon: { fontSize: 26, marginBottom: 6 },
+  thumbnailIcon: { fontSize: ms(26), marginBottom: vs(6) },
   thumbnailPlayer: {
     color: APP_THEME.text,
-    fontSize: 12,
+    fontSize: ms(12),
     fontWeight: '700',
     textAlign: 'center',
   },
   thumbnailTime: {
     color: APP_THEME.textMuted,
-    fontSize: 10,
-    marginTop: 2,
+    fontSize: ms(10),
+    marginTop: vs(2),
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   actionsContainer: { width: '100%' },

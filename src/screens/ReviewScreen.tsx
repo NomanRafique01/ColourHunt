@@ -11,6 +11,7 @@ import { ColorSwatch } from '../components/ColorSwatch'
 import { APP_THEME, GAME_COLORS } from '../constants/colors'
 import { REVIEW_TIMEOUT_SECONDS } from '../constants/game'
 import { useGameStore } from '../store/game'
+import { s, vs, ms } from '../utils/scale'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Review'>
 
@@ -52,7 +53,7 @@ export default function ReviewScreen() {
             <Text style={styles.reviewingLabel}>SUBMISSION FROM</Text>
             <Text style={styles.submitterName}>{submitterName}</Text>
           </View>
-          <ColorSwatch color={assignedColor} size={46} label="Target" />
+          <ColorSwatch color={assignedColor} size={s(46)} label="Target" />
         </View>
 
         {/* Photo Placeholder */}
@@ -103,8 +104,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: s(20),
+    paddingVertical: vs(14),
     justifyContent: 'space-between',
   },
   headerCard: {
@@ -112,87 +113,87 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: APP_THEME.surface,
-    padding: 16,
-    borderRadius: 14,
+    padding: s(16),
+    borderRadius: s(14),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
     shadowColor: APP_THEME.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: vs(2) },
     shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowRadius: s(6),
     elevation: 2,
   },
   submitterInfo: { flex: 1 },
   reviewingLabel: {
     color: APP_THEME.primary,
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '700',
     letterSpacing: 2,
-    marginBottom: 4,
+    marginBottom: vs(4),
   },
   submitterName: {
     color: APP_THEME.text,
-    fontSize: 20,
+    fontSize: ms(20),
     fontWeight: '800',
   },
   photoContainer: {
     flex: 1,
-    marginVertical: 12,
+    marginVertical: vs(12),
   },
   photoBox: {
     flex: 1,
     backgroundColor: APP_THEME.backgroundSoft,
-    borderRadius: 16,
+    borderRadius: s(16),
     borderWidth: 1.5,
     borderColor: APP_THEME.surfaceBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: s(20),
   },
-  photoIcon: { fontSize: 56, marginBottom: 14 },
+  photoIcon: { fontSize: ms(56), marginBottom: vs(14) },
   photoPlaceholderText: {
     color: APP_THEME.text,
-    fontSize: 17,
+    fontSize: ms(17),
     fontWeight: '700',
     textAlign: 'center',
   },
   photoSubtext: {
     color: APP_THEME.textMuted,
-    fontSize: 13,
-    marginTop: 6,
+    fontSize: ms(13),
+    marginTop: vs(6),
     textAlign: 'center',
   },
   analysisSection: {
     backgroundColor: APP_THEME.surface,
-    padding: 16,
-    borderRadius: 14,
+    padding: s(16),
+    borderRadius: s(14),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
-    marginBottom: 8,
+    marginBottom: vs(8),
   },
   scoreRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: vs(8),
   },
   scoreLabel: {
     color: APP_THEME.textSecondary,
-    fontSize: 13,
+    fontSize: ms(13),
     fontWeight: '600',
   },
   scoreValue: {
     color: APP_THEME.primary,
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '800',
   },
   timeoutBadge: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: vs(10),
   },
   timeoutText: {
     color: APP_THEME.textMuted,
-    fontSize: 12,
+    fontSize: ms(12),
     fontWeight: '500',
   },
   timeoutMono: {
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   },
   decisionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: s(12),
   },
   decisionButton: { flex: 1 },
 })

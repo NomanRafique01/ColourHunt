@@ -12,6 +12,7 @@ import { APP_THEME } from '../constants/colors'
 import { MAX_PLAYERS, MIN_PLAYERS } from '../constants/game'
 import { useRoomStore } from '../store/room'
 import { usePlayerStore } from '../store/player'
+import { s, vs, ms } from '../utils/scale'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Lobby'>
 type LobbyRouteProp = RouteProp<RootStackParamList, 'Lobby'>
@@ -96,7 +97,7 @@ export default function LobbyScreen() {
                 <Text style={styles.waitingText}>Waiting for host to start the game...</Text>
               </View>
             )}
-            <Button title="Leave Room" variant="outline" onPress={() => navigation.navigate('Home')} />
+            <Button title="Leave Room" variant="outline" onPress={() => navigation.navigate('MainTabs')} />
           </View>
         </View>
       </ScrollView>
@@ -110,38 +111,38 @@ const styles = StyleSheet.create({
     backgroundColor: APP_THEME.background,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingHorizontal: s(20),
+    paddingVertical: vs(24),
     justifyContent: 'center',
     flexGrow: 1,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: vs(24),
   },
   headerEyebrow: {
     color: APP_THEME.primary,
-    fontSize: 11,
+    fontSize: ms(11),
     fontWeight: '700',
     letterSpacing: 2.5,
-    marginBottom: 10,
+    marginBottom: vs(10),
   },
   codeBadge: {
     backgroundColor: APP_THEME.surface,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 14,
+    paddingHorizontal: s(28),
+    paddingVertical: vs(12),
+    borderRadius: s(14),
     borderWidth: 1.5,
     borderColor: APP_THEME.primary,
-    marginBottom: 10,
+    marginBottom: vs(10),
     shadowColor: APP_THEME.shadowColorRed,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowRadius: s(10),
     elevation: 3,
   },
   codeText: {
-    fontSize: 30,
+    fontSize: ms(30),
     fontWeight: '900',
     color: APP_THEME.text,
     letterSpacing: 8,
@@ -149,41 +150,41 @@ const styles = StyleSheet.create({
   },
   playerCount: {
     color: APP_THEME.textMuted,
-    fontSize: 13,
+    fontSize: ms(13),
     fontWeight: '600',
   },
   card: {
     backgroundColor: APP_THEME.surface,
-    padding: 20,
-    borderRadius: 18,
+    padding: s(20),
+    borderRadius: s(18),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
     shadowColor: APP_THEME.shadowColor,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: vs(4) },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: s(12),
     elevation: 3,
   },
   cardTitle: {
     color: APP_THEME.textSecondary,
-    fontSize: 11,
+    fontSize: ms(11),
     fontWeight: '700',
-    marginBottom: 14,
+    marginBottom: vs(14),
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   playerList: {
-    marginBottom: 18,
+    marginBottom: vs(18),
   },
   playerSlot: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: vs(12),
+    paddingHorizontal: s(14),
+    borderRadius: s(10),
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: vs(8),
   },
   slotFilled: {
     backgroundColor: APP_THEME.backgroundSoft,
@@ -199,20 +200,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slotIndexBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: s(26),
+    height: s(26),
+    borderRadius: s(13),
     backgroundColor: APP_THEME.surfaceBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: s(12),
   },
   slotIndexActive: {
     backgroundColor: APP_THEME.primary,
   },
   slotIndexText: {
     color: APP_THEME.textMuted,
-    fontSize: 12,
+    fontSize: ms(12),
     fontWeight: '800',
   },
   slotIndexTextActive: {
@@ -220,43 +221,43 @@ const styles = StyleSheet.create({
   },
   playerName: {
     color: APP_THEME.text,
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '600',
   },
   playerEmptyText: {
     color: APP_THEME.textMuted,
     fontStyle: 'italic',
-    fontSize: 14,
+    fontSize: ms(14),
   },
   hostBadge: {
     backgroundColor: APP_THEME.primarySubtle,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: s(10),
+    paddingVertical: vs(4),
+    borderRadius: s(6),
     borderWidth: 1,
     borderColor: APP_THEME.primary,
   },
   hostBadgeText: {
     color: APP_THEME.primary,
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     letterSpacing: 1,
   },
   actionsContainer: {
-    marginTop: 4,
+    marginTop: vs(4),
   },
   waitingContainer: {
-    paddingVertical: 14,
+    paddingVertical: vs(14),
     backgroundColor: APP_THEME.backgroundSoft,
-    borderRadius: 10,
+    borderRadius: s(10),
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: vs(6),
     borderWidth: 1,
     borderColor: APP_THEME.surfaceBorder,
   },
   waitingText: {
     color: APP_THEME.textMuted,
-    fontSize: 13,
+    fontSize: ms(13),
     fontWeight: '500',
     fontStyle: 'italic',
   },

@@ -2,63 +2,60 @@ import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Platform,
-  ScrollView,
   Share,
   Clipboard,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useIsFocused } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RootStackParamList } from '../types/navigation'
-import { APP_THEME, COLORS } from '../constants/colors'
+import { ACCENT, APP_THEME, COLORS } from '../constants/colors'
 import { useRoomStore } from '../store/room'
 import { s, vs, ms } from '../utils/scale'
-import { FlatLogoMark } from '../../assets/svg/FlatLogoMark'
+import { ScreenHeader } from '../components/ScreenHeader'
+import { Card } from '../components/Card'
+import { CodeTile } from '../components/CodeTile'
+import { ActionButton } from '../components/ActionButton'
+import { StickyFooterButton } from '../components/StickyFooterButton'
 import { CopyIcon } from '../../assets/svg/CopyIcon'
 import { ShareIcon } from '../../assets/svg/ShareIcon'
 import { HostCrownBadge } from '../../assets/svg/HostCrownBadge'
-import { SlidersIcon } from '../../assets/svg/SlidersIcon'
 import { StopwatchIcon } from '../../assets/svg/StopwatchIcon'
 import { RoundCounterIcon } from '../../assets/svg/RoundCounterIcon'
 import { PeopleDotsIcon } from '../../assets/svg/PeopleDotsIcon'
+import { CreateArt } from '../art/CreateArt'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateRoom'>
 
-// ─── Design Tokens ────────────────────────────────────────────────────────────
+const HERO_TOP = APP_THEME.heroTop
 
-/** Spacing scale: 8 / 12 / 16 / 24 */
-const SP = { xs: 8, sm: 12, md: 16, lg: 24 } as const
+/** Per-player slot colours: P1 red, P2 blue, P3 green, P4 yellow */
+const SLOT_COLORS = [
+  { bg: ACCENT.red.light,    border: ACCENT.red.base,    dark: ACCENT.red.dark },
+  { bg: ACCENT.blue.light,   border: ACCENT.blue.base,   dark: ACCENT.blue.dark },
+  { bg: ACCENT.green.light,  border: ACCENT.green.base,  dark: ACCENT.green.dark },
+  { bg: ACCENT.yellow.light, border: ACCENT.yellow.base, dark: ACCENT.yellow.dark },
+  { bg: ACCENT.purple.light, border: ACCENT.purple.base, dark: ACCENT.purple.dark },
+  { bg: ACCENT.amber.light,  border: ACCENT.amber.base,  dark: ACCENT.amber.dark },
+] as const
 
-/** Corner radii: only two values used everywhere */
-const RADIUS = { card: 20, chip: 12 } as const
-
-/** Per-player slot colours – red palette only */
-const PLAYER_COLORS: { bg: string; border: string; text: string }[] = [
-  { bg: COLORS.red100, border: COLORS.red500, text: COLORS.red700 }, // P1 – crimson
-  { bg: COLORS.red100, border: COLORS.red400, text: COLORS.red600 }, // P2 – scarlet
-  { bg: COLORS.red100, border: COLORS.red600, text: COLORS.red800 }, // P3 – cardinal
-  { bg: COLORS.red100, border: COLORS.red300, text: COLORS.red600 }, // P4 – rose
-]
-
-// ─── Room Code Generator (no 0,O,1,I) ────────────────────────────────────────
+// ─── Room Code Generator (4 characters to match Join Room) ───────────────────
 
 const SAFE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
-function generateRoomCode(length = 5): string {
+function generateRoomCode(length = 4): string {
   return Array.from({ length }, () =>
     SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]
   ).join('')
 }
 
-// ─── Pulsing Dot (amber for Waiting) ─────────────────────────────────────────
+// ─── Pulsing Dot ─────────────────────────────────────────────────────────────
 
-function PulsingDot({ color = APP_THEME.primary }: { color?: string }) {
+function PulsingDot({ color = ACCENT.amber.base }: { color?: string }) {
   const scale   = useRef(new Animated.Value(1)).current
   const opacity = useRef(new Animated.Value(1)).current
 
@@ -96,55 +93,57 @@ function PulsingDot({ color = APP_THEME.primary }: { color?: string }) {
 // ─── Player Slot ──────────────────────────────────────────────────────────────
 
 function PlayerSlot({ filled, index }: { filled: boolean; index: number }) {
-  const pc = PLAYER_COLORS[index % PLAYER_COLORS.length]
+  const pc = SLOT_COLORS[index % SLOT_COLORS.length]
   const isHost = index === 0 && filled
 
   return (
-    <View style={[
-      slotStyles.wrap,
-      filled
-        ? { borderColor: pc.border, borderStyle: 'solid', backgroundColor: pc.bg }
-        : slotStyles.wrapEmpty,
-    ]}>
+    <View
+      style={[
+        slotStyles.wrap,
+        filled
+          ? { borderColor: pc.border, borderStyle: 'solid', backgroundColor: pc.bg }
+          : { borderColor: pc.border, borderStyle: 'dashed', backgroundColor: pc.bg },
+      ]}
+    >
       {/* Player colour accent top bar */}
-      <View style={[slotStyles.accentBar, { backgroundColor: filled ? pc.border : COLORS.red200 }]} />
+      <View style={[slotStyles.accentBar, { backgroundColor: pc.border }]} />
 
       {filled ? (
         <View style={slotStyles.filledContent}>
           {isHost && (
             <View style={slotStyles.crownBadge}>
-              <HostCrownBadge size={s(13)} color={APP_THEME.primary} />
+              <HostCrownBadge size={s(15)} color={APP_THEME.primary} />
             </View>
           )}
           {/* Avatar circle */}
           <View style={[slotStyles.avatarFilled, { backgroundColor: pc.border }]}>
-            <Text style={slotStyles.avatarInitial}>
+            <Text style={[slotStyles.avatarInitial, index === 3 && { color: pc.dark }]}>
               {index === 0 ? 'Y' : `P${index + 1}`}
             </Text>
           </View>
-          <Text style={[slotStyles.label, { color: pc.text }]}>
+          <Text style={[slotStyles.label, { color: pc.dark }]}>
             {index === 0 ? 'You' : `P${index + 1}`}
           </Text>
           {isHost && (
-            <View style={[slotStyles.hostChip, { backgroundColor: pc.bg, borderColor: pc.border }]}>
-              <Text style={[slotStyles.hostChipText, { color: pc.text }]}>Host</Text>
+            <View style={[slotStyles.hostChip, { backgroundColor: COLORS.pure_white, borderColor: pc.border }]}>
+              <Text style={[slotStyles.hostChipText, { color: pc.dark }]}>Host</Text>
             </View>
           )}
         </View>
       ) : (
         <View style={slotStyles.emptyContent}>
-          {/* Large "+" centred */}
-          <View style={slotStyles.plusCircle}>
-            <Text style={slotStyles.plusSign}>+</Text>
+          {/* Coloured "+" circle */}
+          <View style={[slotStyles.plusCircle, { backgroundColor: pc.border }]}>
+            <Text style={[slotStyles.plusSign, { color: index === 3 ? pc.dark : COLORS.pure_white }]}>+</Text>
           </View>
-          <Text style={slotStyles.waitingLabel}>Waiting…</Text>
+          <Text style={[slotStyles.waitingLabel, { color: pc.dark }]}>Waiting…</Text>
         </View>
       )}
     </View>
   )
 }
 
-// ─── Editable Setting Stepper Card ───────────────────────────────────────────
+// ─── Editable Setting Stepper Card (Polished: no slider icon, bigger bold coloured value) ───
 
 function EditableSettingCard({
   icon,
@@ -155,6 +154,7 @@ function EditableSettingCard({
   onIncrement,
   canDecrement,
   canIncrement,
+  accentColor,
 }: {
   icon: React.ReactNode
   label: string
@@ -164,43 +164,66 @@ function EditableSettingCard({
   onIncrement: () => void
   canDecrement: boolean
   canIncrement: boolean
+  accentColor: string
 }) {
   return (
     <View style={stepperCardStyles.card}>
       <View style={stepperCardStyles.topRow}>
         <View style={stepperCardStyles.labelWrap}>
-          {icon}
+          <View style={[stepperCardStyles.iconBadge, { backgroundColor: `${accentColor}18` }]}>
+            {icon}
+          </View>
           <Text style={stepperCardStyles.label}>{label}</Text>
-          <View style={stepperCardStyles.rangePill}>
-            <Text style={stepperCardStyles.rangeText}>{rangeLabel}</Text>
+          <View style={[stepperCardStyles.rangePill, { backgroundColor: `${accentColor}14` }]}>
+            <Text style={[stepperCardStyles.rangeText, { color: accentColor }]}>{rangeLabel}</Text>
           </View>
         </View>
-        <SlidersIcon size={s(14)} color={APP_THEME.primary} />
       </View>
 
       <View style={stepperCardStyles.stepperRow}>
         <TouchableOpacity
-          style={[stepperCardStyles.stepBtn, !canDecrement && stepperCardStyles.stepBtnDisabled]}
+          style={[
+            stepperCardStyles.stepBtn,
+            { borderColor: accentColor },
+            !canDecrement && stepperCardStyles.stepBtnDisabled,
+          ]}
           onPress={onDecrement}
           disabled={!canDecrement}
           activeOpacity={0.7}
         >
-          <Text style={[stepperCardStyles.stepBtnSign, !canDecrement && stepperCardStyles.stepBtnSignDisabled]}>
+          <Text
+            style={[
+              stepperCardStyles.stepBtnSign,
+              { color: accentColor },
+              !canDecrement && stepperCardStyles.stepBtnSignDisabled,
+            ]}
+          >
             –
           </Text>
         </TouchableOpacity>
 
+        {/* Bigger, bold, coloured value per setting */}
         <View style={stepperCardStyles.valuePill}>
-          <Text style={stepperCardStyles.valueText}>{value}</Text>
+          <Text style={[stepperCardStyles.valueText, { color: accentColor }]}>{value}</Text>
         </View>
 
         <TouchableOpacity
-          style={[stepperCardStyles.stepBtn, stepperCardStyles.stepBtnPlus, !canIncrement && stepperCardStyles.stepBtnDisabled]}
+          style={[
+            stepperCardStyles.stepBtn,
+            { backgroundColor: accentColor, borderColor: accentColor },
+            !canIncrement && stepperCardStyles.stepBtnDisabled,
+          ]}
           onPress={onIncrement}
           disabled={!canIncrement}
           activeOpacity={0.7}
         >
-          <Text style={[stepperCardStyles.stepBtnSign, stepperCardStyles.stepBtnSignPlus, !canIncrement && stepperCardStyles.stepBtnSignDisabled]}>
+          <Text
+            style={[
+              stepperCardStyles.stepBtnSign,
+              stepperCardStyles.stepBtnSignPlus,
+              !canIncrement && stepperCardStyles.stepBtnSignDisabled,
+            ]}
+          >
             +
           </Text>
         </TouchableOpacity>
@@ -214,8 +237,9 @@ function EditableSettingCard({
 export default function CreateRoomScreen() {
   const navigation  = useNavigation<NavigationProp>()
   const insets      = useSafeAreaInsets()
+  const isFocused   = useIsFocused()
   const [copied, setCopied]   = useState(false)
-  const [roomCode]            = useState(() => generateRoomCode(5))
+  const [roomCode]            = useState(() => generateRoomCode(4))
 
   // Room store settings with live updates
   const { maxPlayers, roundTimerSeconds, totalRounds, setSettings, setRoomCode } = useRoomStore()
@@ -225,6 +249,10 @@ export default function CreateRoomScreen() {
 
   // Live slots based on host's chosen player limit
   const filledSlots = Array.from({ length: playersLimit }, (_, i) => i === 0)
+
+  // Status tokens: amber while waiting, green when ready
+  const isReady = false
+  const statusTheme = isReady ? ACCENT.green : ACCENT.amber
 
   const slideY = useRef(new Animated.Value(40)).current
   const fadeIn = useRef(new Animated.Value(0)).current
@@ -279,137 +307,62 @@ export default function CreateRoomScreen() {
     navigation.navigate('Lobby', { code: roomCode, isHost: true })
   }
 
-  // Sticky bottom button height for scroll padding
-  const stickyBtnHeight = vs(56) + insets.bottom + SP.md
+  const stickyBtnHeight = vs(54) + insets.bottom + vs(12) * 2
+  const scrollBottomPadding = stickyBtnHeight + vs(16)
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-
-      {/* ── Top Nav with Flat Logo Mark ── */}
-      <View style={styles.topNav}>
-        <View style={styles.brandRow}>
-          <FlatLogoMark size={s(36)} />
-          <Text style={styles.navWordmark}>
-            Colour<Text style={styles.navWordmarkAccent}>Hunt</Text>
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Scrollable body ── */}
+      {/* ── Scrollable Body ── */}
       <Animated.ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: stickyBtnHeight }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPadding }]}
         showsVerticalScrollIndicator={false}
-        style={{ opacity: fadeIn, transform: [{ translateY: slideY }] }}
+        bounces={false}
+        style={{ opacity: fadeIn, transform: [{ translateY: slideY }], backgroundColor: APP_THEME.background }}
       >
-        {/* ── Back Button ── */}
-        <View style={styles.backRow}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <View style={styles.backIconWrap}>
-              <Ionicons name="arrow-back" size={s(15)} color={APP_THEME.primary} />
-            </View>
-            <Text style={styles.backBtnText}>Back</Text>
-          </TouchableOpacity>
-        </View>
+        {/* ── Shared Red Hero ScreenHeader ── */}
+        <ScreenHeader
+          title="Create"
+          titleAccent="Room"
+          subtitle="Customize room settings and share code with friends"
+          onBack={() => navigation.goBack()}
+          artNode={isFocused ? <CreateArt /> : null}
+        />
 
-        {/* ── Page Title ── */}
-        <View style={styles.titleBlock}>
-          <Text style={styles.pageTitle}>
-            Create <Text style={styles.pageTitleAccent}>Room</Text>
-          </Text>
-          <View style={styles.titleBar} />
-          <Text style={styles.pageSubtitle}>Customize room settings and share code with friends</Text>
-        </View>
+        {/* ── Cards Container (Overlaps the bottom of the hero area) ── */}
+        <View style={styles.cardsContainer}>
 
-        {/* ── Room Code Card ── */}
-        <View style={styles.card}>
-          <View style={[styles.cardAccent, { backgroundColor: APP_THEME.primary }]} />
-          <View style={styles.cardBody}>
-            {/* Label row */}
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.labelRow}>
-                <View style={[styles.labelDot, { backgroundColor: APP_THEME.primary }]} />
-                <Text style={styles.cardLabel}>ROOM CODE</Text>
-              </View>
-            </View>
-
-            {/* Hero code tiles */}
+          {/* ── CARD 1: ROOM CODE CARD (Shared Card) ── */}
+          <Card accentColor={ACCENT.red.base} label="ROOM CODE">
+            {/* Shared Code Tiles (Red, Blue, Green, Yellow) */}
             <View style={styles.codeBadge}>
               {roomCode.split('').map((char, i) => (
-                <View key={i} style={styles.codeCharBox}>
-                  <Text style={styles.codeChar}>{char}</Text>
-                </View>
+                <CodeTile key={i} char={char} index={i} state="filled" />
               ))}
             </View>
 
-            {/* Copy + Share buttons with 2px stroke SVG icons */}
+            {/* Shared ActionButtons: Copy (light blue) + Share (solid red) */}
             <View style={styles.codeActions}>
-              <TouchableOpacity
-                style={styles.copyBtn}
+              <ActionButton
+                label={copied ? 'Copied!' : 'Copy'}
+                variant="blue"
+                icon={<CopyIcon size={s(15)} color={ACCENT.blue.dark} />}
                 onPress={handleCopy}
-                activeOpacity={0.75}
-              >
-                <CopyIcon size={s(15)} color={COLORS.red700} />
-                <Text style={styles.copyBtnText}>{copied ? 'Copied!' : 'Copy'}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.shareBtn}
+              />
+              <ActionButton
+                label="Share"
+                variant="red"
+                icon={<ShareIcon size={s(15)} color={COLORS.pure_white} />}
                 onPress={handleShare}
-                activeOpacity={0.85}
-              >
-                <ShareIcon size={s(15)} color={COLORS.pure_white} />
-                <Text style={styles.shareBtnText}>Share</Text>
-              </TouchableOpacity>
+              />
             </View>
-          </View>
-        </View>
+          </Card>
 
-        {/* ── Lobby Status Card (Live Updates with Host Settings) ── */}
-        <View style={styles.card}>
-          <View style={[styles.cardAccent, { backgroundColor: APP_THEME.primary }]} />
-          <View style={styles.cardBody}>
-            {/* Header: label + Waiting pill */}
-            <View style={styles.cardHeaderRow}>
-              <View style={styles.labelRow}>
-                <View style={[styles.labelDot, { backgroundColor: APP_THEME.primary }]} />
-                <Text style={styles.cardLabel}>LOBBY STATUS</Text>
-              </View>
-              <View style={styles.waitingPill}>
-                <PulsingDot />
-                <Text style={styles.waitingPillText}>Waiting</Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Players count label – Live Updates */}
-            <Text style={styles.slotsLabel}>PLAYERS  1 / {playersLimit}</Text>
-
-            {/* Player slots grid – Dynamically shows playersLimit slots */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.slotsScrollRow}>
-              <View style={styles.slotsRow}>
-                {filledSlots.map((filled, i) => (
-                  <View key={i} style={{ width: s(68) }}>
-                    <PlayerSlot filled={filled} index={i} />
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-
-            <View style={[styles.divider, { marginTop: vs(SP.sm) }]} />
-
-            {/* Editable Settings Steppers (Max Players, Timer, Rounds) */}
-            <Text style={[styles.slotsLabel, { marginBottom: vs(SP.xs) }]}>ROOM SETTINGS</Text>
-
+          {/* ── CARD 2: ROOM SETTINGS CARD (Shared Card, Blue Accent) ── */}
+          <Card accentColor={ACCENT.blue.base} label="ROOM SETTINGS">
             <View style={styles.editableSettingsList}>
-              {/* Setting 1: Max Players */}
+              {/* Setting 1: Max Players (Red icon & bold red value) */}
               <EditableSettingCard
-                icon={<PeopleDotsIcon size={s(15)} color={APP_THEME.primary} />}
+                icon={<PeopleDotsIcon size={s(15)} color={ACCENT.red.base} />}
                 label="Max Players"
                 rangeLabel="2–8"
                 value={`${playersLimit}`}
@@ -417,11 +370,12 @@ export default function CreateRoomScreen() {
                 canIncrement={playersLimit < 8}
                 onDecrement={() => updatePlayers(-1)}
                 onIncrement={() => updatePlayers(1)}
+                accentColor={ACCENT.red.base}
               />
 
-              {/* Setting 2: Round Timer */}
+              {/* Setting 2: Round Timer (Blue icon & bold blue value) */}
               <EditableSettingCard
-                icon={<StopwatchIcon size={s(15)} color={APP_THEME.primary} />}
+                icon={<StopwatchIcon size={s(15)} color={ACCENT.blue.base} />}
                 label="Round Timer"
                 rangeLabel="30s–180s"
                 value={`${timerLimit}s`}
@@ -429,11 +383,12 @@ export default function CreateRoomScreen() {
                 canIncrement={timerLimit < 180}
                 onDecrement={() => updateTimer(-15)}
                 onIncrement={() => updateTimer(15)}
+                accentColor={ACCENT.blue.base}
               />
 
-              {/* Setting 3: Total Rounds */}
+              {/* Setting 3: Total Rounds (Green icon & bold green value) */}
               <EditableSettingCard
-                icon={<RoundCounterIcon size={s(15)} color={APP_THEME.primary} />}
+                icon={<RoundCounterIcon size={s(15)} color={ACCENT.green.base} />}
                 label="Total Rounds"
                 rangeLabel="1–10"
                 value={`${roundsLimit}`}
@@ -441,308 +396,125 @@ export default function CreateRoomScreen() {
                 canIncrement={roundsLimit < 10}
                 onDecrement={() => updateRounds(-1)}
                 onIncrement={() => updateRounds(1)}
+                accentColor={ACCENT.green.base}
               />
             </View>
-          </View>
-        </View>
+          </Card>
 
-        {/* ── Static Footer Hint (No fixed numbers) ── */}
-        <View style={styles.footerNote}>
-          <View style={styles.footerDot} />
-          <Text style={styles.footerNoteText}>HOST SETS THE RULES · REAL-WORLD MULTIPLAYER</Text>
-          <View style={styles.footerDot} />
+          {/* ── CARD 3: LOBBY STATUS CARD (Shared Card, Amber/Green Accent) ── */}
+          <Card
+            accentColor={statusTheme.base}
+            label="LOBBY STATUS"
+            rightAccessory={
+              <View style={[styles.statusPill, { backgroundColor: statusTheme.light, borderColor: statusTheme.base }]}>
+                <PulsingDot color={statusTheme.dark} />
+                <Text style={[styles.statusPillText, { color: statusTheme.dark }]}>
+                  {isReady ? 'Ready' : 'Waiting'}
+                </Text>
+              </View>
+            }
+          >
+            <View style={styles.divider} />
+
+            {/* Players count label */}
+            <Text style={styles.slotsLabel}>PLAYERS  1 / {playersLimit}</Text>
+
+            {/* Equal-width player slots filling the card with equal gaps */}
+            <View style={styles.slotsRow}>
+              {filledSlots.map((filled, i) => (
+                <PlayerSlot key={i} filled={filled} index={i} />
+              ))}
+            </View>
+          </Card>
+
+          {/* ── Static Footer Hint ── */}
+          <View style={styles.footerNote}>
+            <View style={styles.footerDot} />
+            <Text style={styles.footerNoteText}>HOST SETS THE RULES · REAL-WORLD MULTIPLAYER</Text>
+            <View style={styles.footerDot} />
+          </View>
+
         </View>
       </Animated.ScrollView>
 
-      {/* ── Sticky Bottom CTA ── */}
-      <View style={[styles.stickyBottom, { paddingBottom: insets.bottom + SP.sm }]}>
-        <TouchableOpacity style={styles.primaryBtn} onPress={handleEnterLobby} activeOpacity={0.85}>
-          <Text style={styles.primaryBtnText}>Start Lobby</Text>
-          <View style={styles.primaryBtnArrow}>
-            <Ionicons name="arrow-forward" size={s(16)} color={COLORS.pure_white} />
-          </View>
-        </TouchableOpacity>
-      </View>
-
+      {/* ── Shared Sticky Bottom CTA ── */}
+      <StickyFooterButton
+        label="Start Lobby"
+        onPress={handleEnterLobby}
+        disabled={false}
+        insetsBottom={insets.bottom}
+      />
     </SafeAreaView>
   )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: APP_THEME.background,
+    backgroundColor: HERO_TOP,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  cardsContainer: {
+    paddingHorizontal: s(16),
+    marginTop: vs(-22),
   },
 
-  /* ── Top Nav ── */
-  topNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: s(SP.lg),
-    paddingTop: vs(SP.sm),
-    paddingBottom: vs(SP.xs),
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(SP.xs),
-  },
-  navLogo: {
-    width: s(38),
-    height: s(38),
-  },
-  navWordmark: {
-    fontSize: ms(20),
-    fontWeight: '800',
-    color: COLORS.red900,
-    letterSpacing: -0.5,
-  },
-  navWordmarkAccent: {
-    color: APP_THEME.primary,
-  },
-
-  /* ── Scroll ── */
-  scroll: {
-    paddingHorizontal: s(SP.md),
-  },
-
-  /* ── Back Button ── */
-  backRow: {
-    marginTop: vs(SP.sm),
-    marginBottom: vs(SP.xs),
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(SP.xs),
-    minWidth: 44,
-    minHeight: 44,
-    paddingVertical: vs(SP.xs),
-    paddingHorizontal: s(SP.sm),
-    borderRadius: s(RADIUS.chip),
-    borderWidth: 1.5,
-    borderColor: 'rgba(228, 12, 26, 0.28)',
-    backgroundColor: APP_THEME.surface,
-    alignSelf: 'flex-start',
-  },
-  backIconWrap: {
-    width: s(22),
-    height: s(22),
-    borderRadius: s(11),
-    backgroundColor: 'rgba(228, 12, 26, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnText: {
-    fontSize: ms(13),
-    fontWeight: '700',
-    color: APP_THEME.primary,
-    letterSpacing: 0.2,
-  },
-
-  /* ── Page Title ── */
-  titleBlock: {
-    marginTop: vs(SP.sm),
-    marginBottom: vs(SP.md),
-  },
-  pageTitle: {
-    fontSize: ms(30),
-    fontWeight: '900',
-    color: APP_THEME.text,
-    letterSpacing: -0.5,
-    lineHeight: ms(36),
-  },
-  pageTitleAccent: {
-    fontSize: ms(30),
-    fontWeight: '900',
-    color: APP_THEME.primary,
-  },
-  titleBar: {
-    width: s(40),
-    height: vs(3),
-    backgroundColor: APP_THEME.primary,
-    borderRadius: 2,
-    marginTop: vs(SP.sm),
-    marginBottom: vs(SP.xs),
-  },
-  pageSubtitle: {
-    fontSize: ms(13),
-    color: COLORS.red800,
-    lineHeight: ms(19),
-  },
-
-  /* ── Card ── */
-  card: {
-    backgroundColor: APP_THEME.surface,
-    borderRadius: s(RADIUS.card),
-    borderWidth: 1,
-    borderColor: 'rgba(228, 12, 26, 0.20)',
-    overflow: 'hidden',
-    marginBottom: vs(SP.md),
-    shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: vs(3) },
-    shadowOpacity: 0.10,
-    shadowRadius: s(10),
-    elevation: 3,
-  },
-  cardAccent: {
-    height: vs(3.5),
-    width: '100%',
-  },
-  cardBody: {
-    paddingHorizontal: s(SP.md),
-    paddingTop: vs(SP.md),
-    paddingBottom: vs(SP.md),
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: vs(SP.md),
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: s(SP.xs),
-  },
-  labelDot: {
-    width: s(7),
-    height: s(7),
-    borderRadius: s(3.5),
-  },
-  cardLabel: {
-    fontSize: ms(12),
-    fontWeight: '700',
-    color: COLORS.red800,
-    letterSpacing: 1.0,
-  },
-
-  /* ── Code Badge (hero) ── */
+  /* ── Code Badge ── */
   codeBadge: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: s(SP.xs),
-    paddingVertical: vs(SP.lg),
+    gap: s(8),
+    paddingTop: vs(4),
+    paddingBottom: vs(12),
   },
-  codeCharBox: {
-    width: s(52),
-    height: s(60),
-    backgroundColor: 'rgba(228, 12, 26, 0.04)',
-    borderRadius: s(RADIUS.chip),
-    borderWidth: 2,
-    borderColor: APP_THEME.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  codeChar: {
-    fontSize: ms(28),
-    fontWeight: '900',
-    color: APP_THEME.primary,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-
-  /* ── Code Actions row ── */
   codeActions: {
     flexDirection: 'row',
-    gap: s(SP.sm),
-  },
-  copyBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: s(6),
-    paddingVertical: vs(SP.sm),
-    borderRadius: s(RADIUS.chip),
-    borderWidth: 1.5,
-    borderColor: APP_THEME.primary,
-    backgroundColor: COLORS.red100,
-  },
-  copyBtnText: {
-    fontSize: ms(13),
-    fontWeight: '700',
-    color: APP_THEME.primary,
-  },
-  shareBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: s(6),
-    paddingVertical: vs(SP.sm),
-    borderRadius: s(RADIUS.chip),
-    backgroundColor: APP_THEME.primary,
-  },
-  shareBtnText: {
-    fontSize: ms(13),
-    fontWeight: '700',
-    color: COLORS.pure_white,
+    gap: s(12),
+    marginTop: vs(4),
   },
 
-  /* ── Waiting Pill (red-light) ── */
-  waitingPill: {
+  /* ── Status Pill ── */
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: s(6),
-    backgroundColor: COLORS.red100,
     paddingVertical: vs(4),
-    paddingHorizontal: s(SP.sm),
-    borderRadius: s(RADIUS.card),
+    paddingHorizontal: s(12),
+    borderRadius: s(20),
     borderWidth: 1,
-    borderColor: APP_THEME.primary,
   },
-  waitingPillText: {
+  statusPillText: {
     fontSize: ms(12),
     fontWeight: '700',
-    color: APP_THEME.primary,
   },
 
   /* ── Divider ── */
   divider: {
     height: 1,
-    backgroundColor: 'rgba(228, 12, 26, 0.12)',
-    marginBottom: vs(SP.md),
+    backgroundColor: APP_THEME.divider,
+    marginVertical: vs(10),
   },
 
   /* ── Slots ── */
   slotsLabel: {
     fontSize: ms(12),
     fontWeight: '700',
-    color: COLORS.red800,
+    color: APP_THEME.textSecondary,
     letterSpacing: 0.8,
-    marginBottom: vs(SP.sm),
+    marginBottom: vs(8),
   },
   slotsRow: {
     flexDirection: 'row',
-    gap: s(SP.xs),
-    marginBottom: vs(SP.md),
+    gap: s(8),
+    width: '100%',
+    flexWrap: 'wrap',
   },
 
-  slotsScrollRow: {
-    paddingVertical: vs(2),
-  },
   editableSettingsList: {
-    gap: vs(SP.xs),
-  },
-
-  /* ── Settings chips row ── */
-  settingsRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.red100,
-    borderRadius: s(RADIUS.chip),
-    borderWidth: 1,
-    borderColor: 'rgba(228, 12, 26, 0.20)',
-    overflow: 'hidden',
-  },
-  settingsDivider: {
-    width: 1,
-    backgroundColor: 'rgba(228, 12, 26, 0.18)',
+    gap: vs(8),
+    marginTop: vs(4),
   },
 
   /* ── Footer ── */
@@ -750,66 +522,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: s(SP.xs),
-    marginTop: vs(SP.md),
-    marginBottom: vs(SP.sm),
+    gap: s(8),
+    marginTop: vs(4),
+    marginBottom: vs(12),
   },
   footerDot: {
     width: s(4),
     height: s(4),
     borderRadius: s(2),
-    backgroundColor: COLORS.red300,
+    backgroundColor: COLORS.gray400,
   },
   footerNoteText: {
-    fontSize: ms(12),
+    fontSize: ms(11),
     fontWeight: '700',
-    color: COLORS.red400,
+    color: COLORS.gray500,
     letterSpacing: 0.8,
-  },
-
-  /* ── Sticky Bottom CTA ── */
-  stickyBottom: {
-    paddingHorizontal: s(SP.md),
-    paddingTop: vs(SP.sm),
-    backgroundColor: APP_THEME.background,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.red100,
-    shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: APP_THEME.primary,
-    borderRadius: s(RADIUS.chip),
-    paddingVertical: vs(16),
-    paddingHorizontal: s(SP.lg),
-    shadowColor: APP_THEME.shadowColorRed,
-    shadowOffset: { width: 0, height: vs(4) },
-    shadowOpacity: 0.30,
-    shadowRadius: s(12),
-    elevation: 6,
-  },
-  primaryBtnText: {
-    flex: 1,
-    color: COLORS.pure_white,
-    fontSize: ms(16),
-    fontWeight: '800',
-    textAlign: 'center',
-    letterSpacing: 0.2,
-  },
-  primaryBtnArrow: {
-    width: s(30),
-    height: s(30),
-    borderRadius: s(8),
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 })
 
@@ -818,44 +545,46 @@ const styles = StyleSheet.create({
 const slotStyles = StyleSheet.create({
   wrap: {
     flex: 1,
-    aspectRatio: 0.82,
-    borderRadius: s(RADIUS.chip),
-    borderWidth: 2,
-    overflow: 'hidden',
+    minWidth: s(64),
+    aspectRatio: 0.78,
+    borderRadius: s(12),
+    borderWidth: 1.5,
+    overflow: 'visible',
     alignItems: 'center',
-  },
-  wrapEmpty: {
-    borderColor: COLORS.red300,
-    borderStyle: 'dashed',
-    backgroundColor: COLORS.red100,
+    position: 'relative',
   },
   accentBar: {
     width: '100%',
     height: vs(3),
+    borderTopLeftRadius: s(10.5),
+    borderTopRightRadius: s(10.5),
   },
   filledContent: {
     flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: vs(SP.xs),
+    paddingTop: vs(8),
+    paddingBottom: vs(6),
     gap: vs(3),
   },
   avatarFilled: {
-    width: s(32),
-    height: s(32),
-    borderRadius: s(16),
+    width: s(28),
+    height: s(28),
+    borderRadius: s(14),
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitial: {
-    fontSize: ms(13),
+    fontSize: ms(12),
     fontWeight: '900',
     color: COLORS.pure_white,
   },
   crownBadge: {
     position: 'absolute',
-    top: vs(2),
-    right: s(4),
+    top: vs(-7),
+    right: s(2),
+    zIndex: 10,
   },
   label: {
     fontSize: ms(12),
@@ -864,7 +593,7 @@ const slotStyles = StyleSheet.create({
   },
   hostChip: {
     paddingHorizontal: s(6),
-    paddingVertical: vs(1),
+    paddingVertical: vs(1.5),
     borderRadius: s(6),
     borderWidth: 1,
   },
@@ -875,52 +604,27 @@ const slotStyles = StyleSheet.create({
   },
   emptyContent: {
     flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: vs(SP.xs),
-    paddingVertical: vs(SP.xs),
+    gap: vs(5),
+    paddingVertical: vs(8),
   },
   plusCircle: {
-    width: s(28),
-    height: s(28),
-    borderRadius: s(14),
-    backgroundColor: COLORS.red200,
+    width: s(24),
+    height: s(24),
+    borderRadius: s(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusSign: {
-    fontSize: ms(18),
+    fontSize: ms(15),
     fontWeight: '700',
-    color: COLORS.red700,
-    lineHeight: ms(20),
+    lineHeight: ms(17),
   },
   waitingLabel: {
-    fontSize: ms(10),
-    fontWeight: '600',
-    color: COLORS.red500,
-    letterSpacing: 0.2,
-  },
-})
-
-// ─── Setting Chip Styles ──────────────────────────────────────────────────────
-
-const chipStyles = StyleSheet.create({
-  wrap: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: vs(SP.sm),
-    gap: vs(2),
-  },
-  value: {
-    fontSize: ms(15),
-    fontWeight: '800',
-    color: COLORS.red900,
-    letterSpacing: -0.2,
-  },
-  label: {
-    fontSize: ms(10),
-    fontWeight: '600',
-    color: COLORS.red700,
+    fontSize: ms(12),
+    fontWeight: '700',
     letterSpacing: 0.2,
   },
 })
@@ -929,90 +633,88 @@ const chipStyles = StyleSheet.create({
 
 const stepperCardStyles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.red100,
-    borderRadius: s(RADIUS.chip),
-    padding: s(SP.sm),
-    marginBottom: vs(SP.xs),
+    backgroundColor: APP_THEME.surfaceElevated,
+    borderRadius: s(12),
+    padding: s(12),
     borderWidth: 1,
-    borderColor: 'rgba(228, 12, 26, 0.15)',
+    borderColor: APP_THEME.surfaceBorder,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: vs(SP.xs),
+    marginBottom: vs(8),
   },
   labelWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: s(6),
+    gap: s(8),
+  },
+  iconBadge: {
+    width: s(26),
+    height: s(26),
+    borderRadius: s(8),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     fontSize: ms(13),
     fontWeight: '700',
-    color: COLORS.red900,
+    color: APP_THEME.text,
   },
   rangePill: {
-    backgroundColor: 'rgba(228, 12, 26, 0.08)',
     paddingHorizontal: s(6),
     paddingVertical: vs(2),
     borderRadius: s(6),
   },
   rangeText: {
     fontSize: ms(10),
-    fontWeight: '600',
-    color: COLORS.red600,
+    fontWeight: '700',
   },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: vs(2),
   },
   stepBtn: {
     width: s(36),
     height: s(36),
     borderRadius: s(18),
-    backgroundColor: COLORS.pure_white,
+    backgroundColor: APP_THEME.surface,
     borderWidth: 1.5,
-    borderColor: APP_THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepBtnPlus: {
-    backgroundColor: APP_THEME.primary,
-    borderColor: APP_THEME.primary,
-  },
   stepBtnDisabled: {
-    borderColor: COLORS.red200,
-    backgroundColor: COLORS.pure_white,
-    opacity: 0.5,
+    borderColor: COLORS.gray300,
+    backgroundColor: APP_THEME.surface,
+    opacity: 0.45,
   },
   stepBtnSign: {
     fontSize: ms(20),
     fontWeight: '800',
-    color: APP_THEME.primary,
     lineHeight: ms(22),
   },
   stepBtnSignPlus: {
     color: COLORS.pure_white,
   },
   stepBtnSignDisabled: {
-    color: COLORS.red300,
+    color: COLORS.gray400,
   },
   valuePill: {
-    paddingHorizontal: s(SP.md),
+    paddingHorizontal: s(16),
     paddingVertical: vs(6),
-    borderRadius: s(RADIUS.chip),
-    backgroundColor: COLORS.pure_white,
+    borderRadius: s(12),
+    backgroundColor: APP_THEME.surface,
     borderWidth: 1,
-    borderColor: 'rgba(228, 12, 26, 0.15)',
+    borderColor: APP_THEME.surfaceBorder,
     minWidth: s(80),
     alignItems: 'center',
   },
   valueText: {
-    fontSize: ms(15),
-    fontWeight: '800',
-    color: COLORS.red900,
+    fontSize: ms(18),
+    fontWeight: '900',
     letterSpacing: -0.2,
   },
 })

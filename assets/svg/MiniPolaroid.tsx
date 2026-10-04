@@ -38,8 +38,8 @@ const BG: Record<SceneType, string> = {
   cat:      '#FFF3E0',
   house:    '#C9E8FF',
   fish:     '#B2EBF2',
-  mountain: '#C8E6C9',
-  car:      '#ECEFF1',
+  mountain: '#E0F7FA',
+  car:      '#FFF8E1',
   fruit:    '#FFF3E0',
   rocket:   '#1A1A3E',
   bird:     '#E8F5E9',
@@ -74,12 +74,12 @@ function Scene({ type }: { type: SceneType }) {
           {/* Nose */}
           <Polygon points="30,28 28,31 32,31" fill="#FF8A65" />
           {/* Mouth */}
-          <Path d="M27 32 Q30 35 33 32" stroke="#9E5B2E" strokeWidth={1.2} fill="none" strokeLinecap="round" />
+          <Path d="M27 32 Q30 35 33 32" stroke="#9E5B2E" strokeWidth={1} fill="none" strokeLinecap="round" />
           {/* Whiskers */}
-          <Line x1={8}  y1={28} x2={22} y2={29} stroke="#9E5B2E" strokeWidth={0.8} />
-          <Line x1={8}  y1={31} x2={22} y2={31} stroke="#9E5B2E" strokeWidth={0.8} />
-          <Line x1={52} y1={28} x2={38} y2={29} stroke="#9E5B2E" strokeWidth={0.8} />
-          <Line x1={52} y1={31} x2={38} y2={31} stroke="#9E5B2E" strokeWidth={0.8} />
+          <Line x1={8}  y1={28} x2={22} y2={29} stroke="#9E5B2E" strokeWidth={1} />
+          <Line x1={8}  y1={31} x2={22} y2={31} stroke="#9E5B2E" strokeWidth={1} />
+          <Line x1={52} y1={28} x2={38} y2={29} stroke="#9E5B2E" strokeWidth={1} />
+          <Line x1={52} y1={31} x2={38} y2={31} stroke="#9E5B2E" strokeWidth={1} />
           {/* Stripes on head */}
           <Path d="M26 13 Q28 10 30 13" stroke="#E08A1E" strokeWidth={1} fill="none" />
           <Path d="M30 12 Q30 9 30 12" stroke="#E08A1E" strokeWidth={1} fill="none" />
@@ -95,9 +95,9 @@ function Scene({ type }: { type: SceneType }) {
           {/* Sun */}
           <Circle cx={50} cy={12} r={6} fill="#FFD740" />
           {/* Clouds */}
-          <Ellipse cx={18} cy={14} rx={9} ry={5} fill="rgba(255,255,255,0.85)" />
-          <Circle cx={12} cy={14} r={5} fill="rgba(255,255,255,0.85)" />
-          <Circle cx={24} cy={13} r={5} fill="rgba(255,255,255,0.85)" />
+          <Ellipse cx={18} cy={14} rx={9} ry={5} fill="#FFFFFF" />
+          <Circle cx={12} cy={14} r={5} fill="#FFFFFF" />
+          <Circle cx={24} cy={13} r={5} fill="#FFFFFF" />
           {/* Ground */}
           <Rect x={0} y={44} width={60} height={10} fill="#81C784" />
           {/* House body */}
@@ -109,17 +109,17 @@ function Scene({ type }: { type: SceneType }) {
           <Circle cx={33} cy={43} r={1.5} fill="#FFCC80" />
           {/* Left window */}
           <Rect x={14} y={33} width={8} height={6} rx={1} fill="#90CAF9" />
-          <Line x1={18} y1={33} x2={18} y2={39} stroke="white" strokeWidth={0.8} />
-          <Line x1={14} y1={36} x2={22} y2={36} stroke="white" strokeWidth={0.8} />
+          <Line x1={18} y1={33} x2={18} y2={39} stroke="#FFFFFF" strokeWidth={1} />
+          <Line x1={14} y1={36} x2={22} y2={36} stroke="#FFFFFF" strokeWidth={1} />
           {/* Right window */}
           <Rect x={38} y={33} width={8} height={6} rx={1} fill="#90CAF9" />
-          <Line x1={42} y1={33} x2={42} y2={39} stroke="white" strokeWidth={0.8} />
-          <Line x1={38} y1={36} x2={46} y2={36} stroke="white" strokeWidth={0.8} />
+          <Line x1={42} y1={33} x2={42} y2={39} stroke="#FFFFFF" strokeWidth={1} />
+          <Line x1={38} y1={36} x2={46} y2={36} stroke="#FFFFFF" strokeWidth={1} />
           {/* Chimney */}
           <Rect x={38} y={14} width={6} height={12} fill="#B0BEC5" />
           {/* Smoke puffs */}
-          <Circle cx={41} cy={12} r={2.5} fill="rgba(180,180,180,0.6)" />
-          <Circle cx={39} cy={9}  r={2}   fill="rgba(180,180,180,0.4)" />
+          <Circle cx={41} cy={12} r={2.5} fill="#CFD8DC" />
+          <Circle cx={39} cy={9}  r={2}   fill="#CFD8DC" />
         </>
       )
 
@@ -143,14 +143,14 @@ function Scene({ type }: { type: SceneType }) {
           <Circle cx={17} cy={28} r={2.2} fill="#1A237E" />
           <Circle cx={16} cy={27} r={0.8} fill="#FFFFFF" />
           {/* Mouth */}
-          <Path d="M12 31 Q14 33 12 35" stroke="#0D47A1" strokeWidth={1.2} fill="none" strokeLinecap="round" />
+          <Path d="M12 31 Q14 33 12 35" stroke="#0D47A1" strokeWidth={1} fill="none" strokeLinecap="round" />
           {/* Scales lines */}
-          <Path d="M26 22 Q28 30 26 38" stroke="#1976D2" strokeWidth={0.8} fill="none" />
-          <Path d="M32 23 Q34 30 32 37" stroke="#1976D2" strokeWidth={0.8} fill="none" />
+          <Path d="M26 22 Q28 30 26 38" stroke="#1976D2" strokeWidth={1} fill="none" />
+          <Path d="M32 23 Q34 30 32 37" stroke="#1976D2" strokeWidth={1} fill="none" />
           {/* Bubbles */}
-          <Circle cx={8}  cy={14} r={2}   fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1} />
-          <Circle cx={14} cy={8}  r={3}   fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1} />
-          <Circle cx={4}  cy={7}  r={1.5} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={1} />
+          <Circle cx={8}  cy={14} r={2}   fill="none" stroke="#FFFFFF" strokeWidth={1} />
+          <Circle cx={14} cy={8}  r={3}   fill="none" stroke="#FFFFFF" strokeWidth={1} />
+          <Circle cx={4}  cy={7}  r={1.5} fill="none" stroke="#FFFFFF" strokeWidth={1} />
         </>
       )
 
@@ -159,27 +159,22 @@ function Scene({ type }: { type: SceneType }) {
       return (
         <>
           <Rect x={0} y={0} width={60} height={54} fill={BG.mountain} />
-          {/* Sky tint */}
-          <Rect x={0} y={0} width={60} height={38} fill="#B2DFDB" />
           {/* Sun */}
-          <Circle cx={48} cy={10} r={7} fill="#FDD835" />
-          {/* Back mountain */}
-          <Polygon points="0,40 22,10 44,40" fill="#78909C" />
-          {/* Snow cap back */}
-          <Polygon points="15,22 22,10 29,22" fill="#ECEFF1" />
-          {/* Front mountain */}
-          <Polygon points="16,54 40,12 64,54" fill="#546E7A" />
-          {/* Snow cap front */}
-          <Polygon points="33,24 40,12 47,24" fill="#FFFFFF" />
-          {/* Pine trees */}
-          <Polygon points="6,54 10,44 14,54"  fill="#2E7D32" />
-          <Polygon points="48,54 52,44 56,54" fill="#2E7D32" />
-          {/* Ground */}
-          <Rect x={0} y={48} width={60} height={6} fill="#A5D6A7" />
+          <Circle cx={47} cy={13} r={6} fill="#FFCA28" />
           {/* Cloud */}
-          <Ellipse cx={16} cy={12} rx={8} ry={4} fill="rgba(255,255,255,0.75)" />
-          <Circle cx={10} cy={12} r={4} fill="rgba(255,255,255,0.75)" />
-          <Circle cx={22} cy={11} r={4} fill="rgba(255,255,255,0.75)" />
+          <Ellipse cx={15} cy={14} rx={8} ry={4} fill="#FFFFFF" />
+          <Circle cx={10} cy={14} r={4} fill="#FFFFFF" />
+          <Circle cx={21} cy={13} r={3.5} fill="#FFFFFF" />
+          {/* Back peak (lighter teal) */}
+          <Polygon points="26,46 42,18 58,46" fill="#4DB6AC" />
+          {/* Back snow cap */}
+          <Polygon points="37,27 42,18 47,27 44,29 42,27 40,29" fill="#FFFFFF" />
+          {/* Front peak (main teal) */}
+          <Polygon points="2,46 22,12 44,46" fill="#00897B" />
+          {/* Front snow cap */}
+          <Polygon points="16,22 22,12 28,22 25,25 22,23 19,25" fill="#FFFFFF" />
+          {/* Flat ground */}
+          <Rect x={0} y={44} width={60} height={10} fill="#80CBC4" />
         </>
       )
 
@@ -188,32 +183,23 @@ function Scene({ type }: { type: SceneType }) {
       return (
         <>
           <Rect x={0} y={0} width={60} height={54} fill={BG.car} />
-          {/* Road */}
-          <Rect x={0} y={38} width={60} height={16} fill="#616161" />
-          {/* Road lines */}
-          <Rect x={6}  y={44} width={10} height={3} rx={1.5} fill="#FAFAFA" />
-          <Rect x={25} y={44} width={10} height={3} rx={1.5} fill="#FAFAFA" />
-          <Rect x={44} y={44} width={10} height={3} rx={1.5} fill="#FAFAFA" />
-          {/* Car body */}
-          <Rect x={4} y={28} width={52} height={14} rx={4} fill="#E53935" />
+          {/* Road ground base */}
+          <Rect x={0} y={42} width={60} height={12} fill="#ECEFF1" />
+          <Line x1={0} y1={42} x2={60} y2={42} stroke="#CFD8DC" strokeWidth={1} />
           {/* Car roof */}
-          <Path d="M14 28 Q16 16 24 16 L38 16 Q44 16 46 28 Z" fill="#C62828" />
-          {/* Windows */}
-          <Rect x={17} y={18} width={10} height={9} rx={2} fill="#B3E5FC" />
-          <Rect x={30} y={18} width={10} height={9} rx={2} fill="#B3E5FC" />
-          {/* Window divider */}
-          <Rect x={27} y={18} width={2} height={9} fill="#C62828" />
+          <Path d="M16 30 Q28 14 42 30 Z" fill="#E53935" />
+          {/* Car body */}
+          <Rect x={8} y={28} width={44} height={13} rx={3} fill="#E53935" />
+          {/* Window */}
+          <Path d="M19 28 Q28 18 38 28 Z" fill="#FFFFFF" />
+          <Line x1={28} y1={21} x2={28} y2={28} stroke="#E53935" strokeWidth={1} />
+          {/* Headlight */}
+          <Circle cx={52} cy={33} r={2} fill="#FFD54F" />
           {/* Wheels */}
-          <Circle cx={16} cy={40} r={8} fill="#212121" />
-          <Circle cx={16} cy={40} r={4} fill="#757575" />
-          <Circle cx={44} cy={40} r={8} fill="#212121" />
-          <Circle cx={44} cy={40} r={4} fill="#757575" />
-          {/* Headlights */}
-          <Rect x={52} y={30} width={5} height={4} rx={2} fill="#FFF176" />
-          {/* Tail lights */}
-          <Rect x={3} y={30} width={4} height={4} rx={2} fill="#FF5722" />
-          {/* Door handle */}
-          <Rect x={26} y={32} width={8} height={2} rx={1} fill="#B71C1C" />
+          <Circle cx={18} cy={41} r={6} fill="#263238" />
+          <Circle cx={18} cy={41} r={2.5} fill="#FFFFFF" />
+          <Circle cx={42} cy={41} r={6} fill="#263238" />
+          <Circle cx={42} cy={41} r={2.5} fill="#FFFFFF" />
         </>
       )
 
@@ -369,7 +355,7 @@ export function MiniPolaroid({ size, scene }: Props) {
     cat:      '#F4A335',
     house:    '#E53935',
     fish:     '#1565C0',
-    mountain: '#546E7A',
+    mountain: '#00897B',
     car:      '#E53935',
     fruit:    '#FF7043',
     rocket:   '#9C27B0',

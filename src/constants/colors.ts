@@ -38,28 +38,38 @@ export const COLORS = {
   red900: '#3D040C',
 
   // ── Blues ───────────────────────────────────────────────────────────────────
-  blue100: '#D6E4FF',
+  blue100: '#E6EEFF',
   blue200: '#ADC8FF',
   blue300: '#5E8FFF',
   blue500: '#2F6BFF',  // brand blue (timer / info)
-  blue700: '#1A3D99',
+  blue700: '#1D4ED8',
   blue900: '#0A1A40',
 
   // ── Greens ──────────────────────────────────────────────────────────────────
-  green100: '#D0F5E2',
+  green100: '#E3F7EC',
   green200: '#9FEAC4',
   green300: '#4DCB87',
   green500: '#1FB35B',  // brand green (ready / found)
-  green700: '#0F6B37',
+  green700: '#15803D',
   green900: '#063320',
 
   // ── Yellows ─────────────────────────────────────────────────────────────────
-  yellow100: '#FFF8D6',
+  yellow100: '#FFF4D1',
   yellow200: '#FFE99A',
   yellow300: '#FFD966',
   yellow500: '#FFC93C',  // brand yellow (winner / highlight)
-  yellow700: '#996600',  // dark text on yellow backgrounds
-  yellow900: '#4D3300',
+  yellow700: '#996600',  // legacy
+  yellow900: '#3B2F00',  // dark text on yellow backgrounds
+
+  // ── Ambers ──────────────────────────────────────────────────────────────────
+  amber100: '#FEF3C7',
+  amber500: '#F59E0B',
+  amber700: '#92400E',
+
+  // ── Purples ─────────────────────────────────────────────────────────────────
+  purple100: '#F3E8FF',
+  purple500: '#7C3AED',
+  purple700: '#5B21B6',
 
   // ── Whites & Neutrals ───────────────────────────────────────────────────────
   cream:      '#FEFEF8',  // off-white / primary background
@@ -186,12 +196,30 @@ export const ACCENT = {
   },
   yellow: {
     base:    COLORS.yellow500,
-    dark:    COLORS.yellow700,
+    dark:    COLORS.yellow900,
     light:   COLORS.yellow100,
-    text:    COLORS.gray800,      // dark text ON yellow – 4.5:1 compliant
-    textOn:  COLORS.yellow700,    // yellow-ish text — ONLY on dark/red backgrounds
+    text:    COLORS.yellow900,    // dark text #3B2F00 ON yellow – 4.5:1 compliant
+    textOn:  COLORS.yellow900,
     shadow:  'rgba(255, 201, 60, 0.30)',
     glow:    'rgba(255, 201, 60, 0.20)',
+  },
+  amber: {
+    base:    COLORS.amber500,
+    dark:    COLORS.amber700,
+    light:   COLORS.amber100,
+    text:    COLORS.amber700,
+    textOn:  COLORS.amber700,
+    shadow:  'rgba(245, 158, 11, 0.25)',
+    glow:    'rgba(245, 158, 11, 0.15)',
+  },
+  purple: {
+    base:    COLORS.purple500,
+    dark:    COLORS.purple700,
+    light:   COLORS.purple100,
+    text:    COLORS.pure_white,
+    textOn:  COLORS.purple700,
+    shadow:  'rgba(124, 58, 237, 0.25)',
+    glow:    'rgba(124, 58, 237, 0.15)',
   },
 } as const
 
@@ -226,14 +254,14 @@ export const PLAYER_COLORS = [
     text:   COLORS.pure_white,
     textOn: COLORS.green700,
   },
-  // P4 – Yellow (winner / highlight) – always dark text on badge
+  // P4 – Yellow (winner / highlight) – always dark text #3B2F00
   {
     slot: 4,
     base:   COLORS.yellow500,
-    dark:   COLORS.yellow700,
+    dark:   COLORS.yellow900,
     light:  COLORS.yellow100,
-    text:   COLORS.gray800,    // dark text on yellow
-    textOn: COLORS.yellow700,  // only on dark backgrounds
+    text:   COLORS.yellow900,    // dark text on yellow
+    textOn: COLORS.yellow900,
   },
 ] as const
 

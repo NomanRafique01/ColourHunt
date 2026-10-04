@@ -16,6 +16,7 @@ import SettingsScreen from '../screens/SettingsScreen'
 import CreateRoomScreen from '../screens/CreateRoomScreen'
 import JoinRoomScreen from '../screens/JoinRoomScreen'
 import LobbyScreen from '../screens/LobbyScreen'
+import ColourSpinScreen from '../screens/ColourSpinScreen'
 import RoundScreen from '../screens/RoundScreen'
 import CameraScreen from '../screens/CameraScreen'
 import ReviewScreen from '../screens/ReviewScreen'
@@ -150,7 +151,12 @@ export function RootNavigator() {
       <Stack.Screen
         name="Lobby"
         component={LobbyScreen}
-        options={{ title: 'Room Lobby', headerBackVisible: false }}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ColourSpin"
+        component={ColourSpinScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
       <Stack.Screen
         name="Round"

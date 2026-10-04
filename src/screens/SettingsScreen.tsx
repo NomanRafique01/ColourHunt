@@ -10,8 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { APP_THEME, COLORS } from '../constants/colors'
 import { s, vs, ms } from '../utils/scale'
-
-const cameraIcon = require('../../assets/icon.png')
+import { SpectrumLensLogo } from '../../assets/svg/SpectrumLensLogo'
 const loadingArtwork = require('../../assets/loading-artwork.png')
 
 type MenuItem = {
@@ -129,7 +128,9 @@ export default function SettingsScreen() {
       {/* Top Nav */}
       <View style={settingsStyles.topNav}>
         <View style={settingsStyles.brandRow}>
-          <Image source={cameraIcon} style={settingsStyles.navLogo} resizeMode="contain" />
+          <View style={settingsStyles.logoTile}>
+            <SpectrumLensLogo size={s(24)} />
+          </View>
           <Text style={settingsStyles.navWordmark}>
             Colour<Text style={settingsStyles.navWordmarkAccent}>Hunt</Text>
           </Text>
@@ -220,7 +221,16 @@ const settingsStyles = StyleSheet.create({
     borderBottomColor: APP_THEME.surfaceBorder,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: s(8) },
-  navLogo: { width: s(32), height: s(32) },
+  logoTile: {
+    width: s(34),
+    height: s(34),
+    borderRadius: s(10),
+    backgroundColor: COLORS.pure_white,
+    borderWidth: 1.5,
+    borderColor: APP_THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   navWordmark: { fontSize: ms(18), fontWeight: '800', color: COLORS.gray900, letterSpacing: -0.5 },
   navWordmarkAccent: { color: APP_THEME.primary },
   profileIcon: { width: s(36), height: s(36), alignItems: 'center', justifyContent: 'center' },

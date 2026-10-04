@@ -7,10 +7,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { RootStackParamList } from '../types/navigation'
 import { APP_THEME, COLORS } from '../constants/colors'
 import { s, vs, ms, w, h } from '../utils/scale'
+import { SpectrumLensLogo } from '../../assets/svg/SpectrumLensLogo'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Loading'>
 
-const cameraIcon = require('../../assets/icon.png')
 const loadingArtwork = require('../../assets/loading-artwork.png')
 
 export default function LoadingScreen() {
@@ -32,7 +32,9 @@ export default function LoadingScreen() {
         <View style={styles.bottomAccent} />
 
         <View style={styles.brand}>
-          <Image source={cameraIcon} style={styles.logo} resizeMode="contain" />
+          <View style={styles.logoTile}>
+            <SpectrumLensLogo size={s(86)} />
+          </View>
           <Text style={styles.wordmark}>Colour<Text style={styles.wordmarkAccent}>Hunt</Text></Text>
           <View style={styles.taglineRow}>
             <Text style={styles.tagline}>See it</Text>
@@ -75,7 +77,21 @@ const styles = StyleSheet.create({
     backgroundColor: APP_THEME.primary,
   },
   brand: { alignItems: 'center', zIndex: 2, paddingTop: vs(58) },
-  logo: { width: s(122), height: s(122) },
+  logoTile: {
+    width: s(122),
+    height: s(122),
+    borderRadius: s(32),
+    backgroundColor: COLORS.pure_white,
+    borderWidth: 4,
+    borderColor: APP_THEME.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: APP_THEME.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 8,
+  },
   wordmark: {
     color: COLORS.gray900,
     fontSize: ms(31),

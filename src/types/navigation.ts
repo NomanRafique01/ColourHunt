@@ -16,7 +16,12 @@ export type RootStackParamList = {
   CreateRoom: undefined
   JoinRoom: undefined
   Lobby: { roomId?: string; code?: string; isHost?: boolean } | undefined
-  Round: { roomId?: string; roundId?: string } | undefined
+  ColourSpin: { isHost?: boolean; roomId?: string } | undefined
+  Round: {
+    roomId?: string
+    roundId?: string
+    assignedColours?: Record<string, { id: number; name: string; hex: string }>
+  } | undefined
   Camera: { roomId?: string; roundId?: string } | undefined
   Review: { roomId?: string; roundId?: string; submissionId?: string } | undefined
   Result: { roomId?: string; roundId?: string; winnerPlayerId?: string } | undefined

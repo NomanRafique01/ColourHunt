@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import Svg, {
   Circle,
@@ -30,7 +30,7 @@ import { s, vs, ms, h } from '../utils/scale'
 import { CameraHero } from '../../assets/svg/CameraHero'
 import { FloatingPolaroid } from '../../assets/svg/FloatingPolaroid'
 import { KeyIcon } from '../../assets/svg/KeyIcon'
-import { FlatLogoMark } from '../../assets/svg/FlatLogoMark'
+import { SpectrumLensLogo } from '../../assets/svg/SpectrumLensLogo'
 import { PeopleDotsIcon } from '../../assets/svg/PeopleDotsIcon'
 import { StopwatchIcon } from '../../assets/svg/StopwatchIcon'
 import { CompassIcon } from '../../assets/svg/CompassIcon'
@@ -75,18 +75,34 @@ function HeroBackground({ height }: { height: number }) {
   )
 }
 
-/** Dot-grid pattern at 8% white opacity. */
+/** Dot-grid pattern: zero near headline, badges, camera and brackets. */
 function HeroDotPattern() {
   const cols = 8
   const rows = 6
   const gapX = SCREEN_W / (cols + 1)
   const gapY = 380 / (rows + 1)
   const dots: { cx: number; cy: number }[] = []
+
+  const camCenterX = SCREEN_W / 2
+  const camCenterY = 270
+
   for (let r = 1; r <= rows; r++) {
     for (let c = 1; c <= cols; c++) {
-      dots.push({ cx: gapX * c, cy: gapY * r })
+      const cx = gapX * c
+      const cy = gapY * r
+
+      // 1. Clear zone near topNav, headline, and badges (cy < 175) -> 0 opacity
+      if (cy < 175) continue
+
+      // 2. Clear zone near camera and viewfinder brackets (|dx| < 140 && |dy| < 105) -> 0 opacity
+      const dx = Math.abs(cx - camCenterX)
+      const dy = Math.abs(cy - camCenterY)
+      if (dx < 140 && dy < 105) continue
+
+      dots.push({ cx, cy })
     }
   }
+
   return (
     <Svg
       width={SCREEN_W}
@@ -95,7 +111,7 @@ function HeroDotPattern() {
       pointerEvents="none"
     >
       {dots.map((d, i) => (
-        <Circle key={i} cx={d.cx} cy={d.cy} r={2.5} fill="white" opacity={0.08} />
+        <Circle key={i} cx={d.cx} cy={d.cy} r={2.5} fill="white" opacity={0.07} />
       ))}
     </Svg>
   )
@@ -165,8 +181,11 @@ function LensFlashGlow({
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const navigation      = useNavigation<NavigationProp>()
+  const insets          = useSafeAreaInsets()
   const displayName     = usePlayerStore((st) => st.displayName)
   const submissionCount = usePlayerStore((st) => st.submissionCount)
+
+  const tabBarHeight = 60 + insets.bottom
 
   const [createPressed, setCreatePressed] = useState(false)
   const [joinPressed,   setJoinPressed]   = useState(false)
@@ -202,40 +221,41 @@ export default function HomeScreen() {
   // ── Polaroid frame layout ─────────────────────────────────────────────────
   // heroSvgWrapper is inside heroContent which has paddingHorizontal: s(16).
   // Effective wrapper width = SCREEN_W - 2*s(16).
-  // Sizes kept small (34–46 dp) so nothing overlaps the camera or each other.
+  // Small sizes (32–40dp) with generous spacing (15–25dp gaps) so they NEVER overlap
+  // each other or the camera during float (translateY ±6dp) or scale-pop.
   const WRAP_W = SCREEN_W - 2 * s(SP.md)  // effective wrapper width
 
   const polaroids = [
     // ── LEFT SIDE (3 frames) ───────────────────────────────────────────────
     {
-      // L1 — cat, top-left, ~25% cropped at left edge, CCW tilt
+      // L1 — cat, top-left, CCW tilt
       scene: 'cat'      as const,
-      left:  -s(10),
-      top:   vs(10),
-      size:  s(44),
-      tilt:  -8,
+      left:  -s(8),
+      top:   vs(6),
+      size:  s(38),
+      tilt:  -10,
       duration: 5200,
       delay:    0,
       popAnim:  popAnims[0],
     },
     {
-      // L2 — house, mid-left, fully visible, mild CW tilt
+      // L2 — house, mid-left, CW tilt (23dp clear gap below L1)
       scene: 'house'    as const,
       left:  s(2),
-      top:   vs(100),
-      size:  s(38),
-      tilt:  5,
+      top:   vs(78),
+      size:  s(32),
+      tilt:  8,
       duration: 4600,
       delay:    800,
       popAnim:  popAnims[1],
     },
     {
-      // L3 — fish, lower-left, slightly cropped at left edge
+      // L3 — fish, lower-left, CCW tilt (23dp clear gap below L2)
       scene: 'fish'     as const,
-      left:  -s(8),
-      top:   vs(182),
-      size:  s(34),
-      tilt:  -10,
+      left:  -s(6),
+      top:   vs(142),
+      size:  s(36),
+      tilt:  -8,
       duration: 6000,
       delay:    1600,
       popAnim:  popAnims[2],
@@ -243,34 +263,34 @@ export default function HomeScreen() {
 
     // ── RIGHT SIDE (3 frames) ──────────────────────────────────────────────
     {
-      // R1 — mountain, top-right, fully visible, gentle CCW tilt
+      // R1 — mountain, top-right, CW tilt, offset height from L1
       scene: 'mountain' as const,
-      left:  WRAP_W - s(46),
-      top:   vs(8),
-      size:  s(46),
-      tilt:  -4,
+      left:  WRAP_W - s(30),
+      top:   vs(16),
+      size:  s(36),
+      tilt:  9,
       duration: 4800,
       delay:    400,
       popAnim:  popAnims[3],
     },
     {
-      // R2 — car, mid-right, fully visible, strong CW tilt
+      // R2 — car, mid-right, CCW tilt, offset height from L2 (24dp gap below R1)
       scene: 'car'      as const,
-      left:  WRAP_W - s(42),
-      top:   vs(100),
-      size:  s(42),
-      tilt:  9,
+      left:  WRAP_W - s(36),
+      top:   vs(86),
+      size:  s(40),
+      tilt:  -11,
       duration: 5600,
       delay:    1200,
       popAnim:  popAnims[4],
     },
     {
-      // R3 — fruit, lower-right, fully visible, gentle CCW tilt
+      // R3 — fruit, lower-right, CW tilt, offset height from L3 (15dp gap below R2)
       scene: 'fruit'    as const,
-      left:  WRAP_W - s(36),
-      top:   vs(182),
-      size:  s(36),
-      tilt:  -5,
+      left:  WRAP_W - s(28),
+      top:   vs(152),
+      size:  s(34),
+      tilt:  7,
       duration: 4200,
       delay:    2000,
       popAnim:  popAnims[5],
@@ -308,7 +328,7 @@ export default function HomeScreen() {
           Animated.timing(pop, {
             toValue: 1,
             duration: 500,
-            easing: Easing.out(Easing.back(1.5)),
+            easing: Easing.back(1.5),
             useNativeDriver: true,
           }).start(() => {
             Animated.timing(pop, {
@@ -330,18 +350,21 @@ export default function HomeScreen() {
     return () => clearTimeout(timer)
   }, [reduceMotion])
 
-  // ── Camera size (30% bigger than before) ─────────────────────────────────
-  const cameraW = s(273)
-  const cameraH = vs(195)
-  const glowSize = s(364)          // glow scales proportionally
-  const flashRingSize = s(96)      // size of the lens flash ring (≈ lens barrel r=46 scaled)
+  // ── Camera size (reduced ~9-10% to fit 8-10% reduced hero height) ──────────
+  const cameraW = s(248)
+  const cameraH = vs(176)
+  const glowSize = s(330)          // glow scales proportionally
+  const flashRingSize = s(86)      // size of the lens flash ring
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={HERO_TOP} />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: tabBarHeight },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -349,8 +372,8 @@ export default function HomeScreen() {
             RED HERO  — gradient + pattern + nav + headline + camera
             ══════════════════════════════════════════════════════════════════ */}
         <View style={styles.heroOuter}>
-          {/* Full-bleed gradient */}
-          <HeroBackground height={vs(420)} />
+          {/* Full-bleed gradient (reduced by ~9.5% from 420 to 380) */}
+          <HeroBackground height={vs(380)} />
 
           {/* Dot grid overlay */}
           <HeroDotPattern />
@@ -361,9 +384,9 @@ export default function HomeScreen() {
             {/* ── Top Nav ── */}
             <View style={styles.topNav}>
               <View style={styles.brandRow}>
-                {/* White tile: red camera logo is clearly visible on white */}
+                {/* White tile: spectrum lens logo mark */}
                 <View style={styles.logoTile}>
-                  <FlatLogoMark size={s(24)} />
+                  <SpectrumLensLogo size={s(26)} />
                 </View>
                 <Text style={styles.navWordmark}>
                   Colour<Text style={styles.navWordmarkAccent}>Hunt</Text>
@@ -392,7 +415,7 @@ export default function HomeScreen() {
                 {/* Red — brand / players */}
                 <View style={styles.badge}>
                   <View style={[styles.badgeIconCircle, { backgroundColor: ACCENT.red.base }]}>
-                    <PeopleDotsIcon size={s(11)} color={COLORS.pure_white} />
+                    <PeopleDotsIcon size={s(13)} color={COLORS.pure_white} />
                   </View>
                   <Text style={styles.badgeText} numberOfLines={1}>Pick players</Text>
                 </View>
@@ -400,7 +423,7 @@ export default function HomeScreen() {
                 {/* Blue — timer / info */}
                 <View style={styles.badge}>
                   <View style={[styles.badgeIconCircle, { backgroundColor: ACCENT.blue.base }]}>
-                    <StopwatchIcon size={s(11)} color={COLORS.pure_white} />
+                    <StopwatchIcon size={s(13)} color={COLORS.pure_white} />
                   </View>
                   <Text style={styles.badgeText} numberOfLines={1}>Set your timer</Text>
                 </View>
@@ -408,7 +431,7 @@ export default function HomeScreen() {
                 {/* Green — real-world / found */}
                 <View style={styles.badge}>
                   <View style={[styles.badgeIconCircle, { backgroundColor: ACCENT.green.base }]}>
-                    <CompassIcon size={s(11)} color={COLORS.pure_white} />
+                    <CompassIcon size={s(13)} color={COLORS.pure_white} />
                   </View>
                   <Text style={styles.badgeText} numberOfLines={1}>Real world</Text>
                 </View>
@@ -601,7 +624,7 @@ const styles = StyleSheet.create({
     // removing 'hidden' here is safe.
     overflow: 'visible',
     // extra height at the bottom so the sheet's -32 overlap lands in gradient
-    paddingBottom: vs(52),
+    paddingBottom: vs(44),
     backgroundColor: HERO_BOT, // fallback colour so no white strip ever shows
   },
 
@@ -629,6 +652,8 @@ const styles = StyleSheet.create({
     height: s(36),
     borderRadius: s(10),
     backgroundColor: COLORS.pure_white,
+    borderWidth: 1.5,
+    borderColor: APP_THEME.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -658,8 +683,8 @@ const styles = StyleSheet.create({
 
   // ── Headline ──────────────────────────────────────────────────────────────
   heroSection: {
-    marginTop: vs(SP.sm),
-    marginBottom: vs(SP.xs),
+    marginTop: vs(SP.xs),
+    marginBottom: 0,
   },
   heroTitle: {
     fontSize: ms(30),
@@ -699,9 +724,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.30)',
   },
   badgeIconCircle: {
-    width: s(18),
-    height: s(18),
-    borderRadius: s(9),
+    width: s(22),
+    height: s(22),
+    borderRadius: s(11),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -712,14 +737,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // ── Camera wrapper ────────────────────────────────────────────────────────
+  // ── Camera wrapper (height reduced by ~8-10%) ──────────────────────────────
   heroSvgWrapper: {
-    height: h(0.28),
-    minHeight: vs(200),
-    maxHeight: vs(240),
+    height: h(0.25),
+    minHeight: vs(180),
+    maxHeight: vs(216),
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: vs(SP.xs),
+    marginVertical: 0,
     // overflow visible so polaroids can bleed off screen edges
     overflow: 'visible',
   },

@@ -14,7 +14,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -35,8 +34,7 @@ import type { RootStackParamList } from '../types/navigation'
 import { ACCENT, APP_THEME, COLORS } from '../constants/colors'
 import { usePlayerStore } from '../store/player'
 import { s, vs, ms } from '../utils/scale'
-import { CameraHero } from '../../assets/svg/CameraHero'
-import { FloatingPolaroid } from '../../assets/svg/FloatingPolaroid'
+import { LoginHuntArt } from '../art/LoginHuntArt'
 import {
   signInAsGuest,
   signInWithEmail,
@@ -374,8 +372,6 @@ export default function AuthScreen() {
   // ── Entrance & Keyboard Animations ────────────────────────────────────────
   const heroFadeAnim = useRef(new Animated.Value(0)).current
   const sheetSlideAnim = useRef(new Animated.Value(80)).current
-  const cameraPopAnim = useRef(new Animated.Value(0.85)).current
-  const flashAnim = useRef(new Animated.Value(0)).current
   const heroCollapseAnim = useRef(new Animated.Value(0)).current // 0 = full, 1 = compact
   const tabSlideAnim = useRef(new Animated.Value(0)).current     // 0 = guest, 1 = email
   const diceRollAnim = useRef(new Animated.Value(0)).current
@@ -396,12 +392,11 @@ export default function AuthScreen() {
     return () => sub.remove()
   }, [])
 
-  // ── Entrance Sequence (Hero fade in, camera pop, sheet slide up) ──────────
+  // ── Entrance Sequence (Hero fade in, sheet slide up) ──────────────────────
   useEffect(() => {
     if (reduceMotion) {
       heroFadeAnim.setValue(1)
       sheetSlideAnim.setValue(0)
-      cameraPopAnim.setValue(1)
       return
     }
 
@@ -418,34 +413,8 @@ export default function AuthScreen() {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.sequence([
-        Animated.timing(cameraPopAnim, {
-          toValue: 1.06,
-          duration: 220,
-          easing: Easing.out(Easing.back(1.5)),
-          useNativeDriver: true,
-        }),
-        Animated.timing(cameraPopAnim, {
-          toValue: 1,
-          duration: 140,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Quick camera flash
-      Animated.sequence([
-        Animated.timing(flashAnim, {
-          toValue: 1,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-        Animated.timing(flashAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]),
     ]).start()
-  }, [reduceMotion, heroFadeAnim, sheetSlideAnim, cameraPopAnim, flashAnim])
+  }, [reduceMotion, heroFadeAnim, sheetSlideAnim])
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
 
@@ -607,7 +576,7 @@ export default function AuthScreen() {
   }
 
   // ── Interpolations ────────────────────────────────────────────────────────
-  const fullHeroH = IS_SMALL_SCREEN ? vs(260) : vs(295)
+  const fullHeroH = IS_SMALL_SCREEN ? vs(300) : vs(330)
   const collapsedHeroH = vs(64)
   const currentHeroH = isKeyboardVisible ? collapsedHeroH : fullHeroH
 
@@ -634,34 +603,9 @@ export default function AuthScreen() {
     outputRange: [0, TAB_WIDTH],
   })
 
-  // Flash opacity
-  const flashOpacity = flashAnim.interpolate({
-    inputRange: [0, 0.3, 1],
-    outputRange: [0, 0.75, 0],
-  })
 
-  const cameraW = s(162)
-  const cameraH = vs(115)
 
-  // Floating polaroids partly cropped at each side (opacity 0.45)
-  const polaroids = [
-    {
-      scene: 'house' as const,
-      left: s(-14),
-      top: vs(12),
-      size: s(34),
-      tilt: -8,
-      duration: 5200,
-    },
-    {
-      scene: 'mountain' as const,
-      left: SCREEN_W - s(52),
-      top: vs(18),
-      size: s(36),
-      tilt: 10,
-      duration: 5600,
-    },
-  ]
+
 
   const isAccountValid =
     email.trim().length > 3 &&
@@ -678,13 +622,7 @@ export default function AuthScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          <View style={{ flex: 1 }}>
             {/* ══════════════════════════════════════════════════════════════════
                 HERO SECTION (Takes extra vertical space with flex)
                 ══════════════════════════════════════════════════════════════════ */}
@@ -736,47 +674,16 @@ export default function AuthScreen() {
                   ]}
                   pointerEvents="box-none"
                 >
-                {/* 2 Mini Polaroids Partly Cropped at each side */}
-                {polaroids.map((p, i) => (
-                  <View key={i} style={{ opacity: 0.5 }}>
-                    <FloatingPolaroid
-                      left={p.left}
-                      top={p.top}
-                      size={p.size}
-                      tilt={p.tilt}
-                      scene={p.scene}
-                      duration={p.duration}
-                      delay={i * 600}
-                      reduceMotion={reduceMotion || !isFocused}
-                    />
-                  </View>
-                ))}
+                {/* "The Hunt" Animated Hero Art */}
+                <LoginHuntArt
+                  isFocused={isFocused}
+                  reduceMotion={reduceMotion}
+                  isKeyboardVisible={isKeyboardVisible}
+                />
 
-                {/* Central Camera Illustration (Same as Home) */}
-                <Animated.View
-                  style={[
-                    styles.cameraContainer,
-                    { transform: [{ scale: cameraPopAnim }] },
-                  ]}
-                >
-                  <CameraHero width={cameraW} height={cameraH} animate={!reduceMotion && isFocused} />
-
-                  {/* Lens flash pulse overlay */}
-                  <Animated.View
-                    style={[
-                      styles.lensFlashRing,
-                      {
-                        opacity: flashOpacity,
-                      },
-                    ]}
-                    pointerEvents="none"
-                  />
-                </Animated.View>
-
-                {/* Headline: "Find the Colour." (white) + "Start the Hunt." (yellow) */}
+                {/* Headline: "Find the Colour" (white) */}
                 <View style={styles.headlineContainer}>
-                  <Text style={styles.heroTitle}>Find the Colour.</Text>
-                  <Text style={styles.heroTitleAccent}>Start the Hunt.</Text>
+                  <Text style={styles.heroTitle}>Find the Colour</Text>
                 </View>
               </Animated.View>
             )}
@@ -958,7 +865,15 @@ export default function AuthScreen() {
                 /* ────────────────────────────────────────────────────────────
                     TAB 2: ACCOUNT (Same components, spacing & Google option)
                     ──────────────────────────────────────────────────────────── */
-                <View style={styles.formBody}>
+                <ScrollView
+                  style={styles.accountFormScroll}
+                  contentContainerStyle={styles.formBody}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
                   {/* Sign In / Create Account Sub-toggle */}
                   <View style={styles.subToggleRow}>
                     <TouchableOpacity
@@ -1121,14 +1036,13 @@ export default function AuthScreen() {
                     <GoogleGIcon size={s(20)} />
                     <Text style={styles.googleBtnText}>Continue with Google</Text>
                   </TouchableOpacity>
-                </View>
+                </ScrollView>
               )}
 
-              {/* Spacer so content doesn't collide with sticky CTA */}
-              <View style={{ height: vs(96) }} />
+              {/* Spacer so guest tab content doesn't collide with sticky CTA */}
+              {authMode === 'guest' && <View style={{ height: vs(96) }} />}
             </Animated.View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
+          </View>
 
         {/* ══════════════════════════════════════════════════════════════════
             STICKY BOTTOM CTA AND FOOTER (Same component as Start Lobby)
@@ -1235,24 +1149,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
     position: 'relative',
-    paddingBottom: vs(12),
-  },
-  cameraContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: vs(8) },
-    shadowOpacity: 0.32,
-    shadowRadius: s(14),
-    elevation: 8,
-  },
-  lensFlashRing: {
-    position: 'absolute',
-    width: s(52),
-    height: s(52),
-    borderRadius: s(26),
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
+    marginTop: vs(-6),
+    paddingBottom: vs(34),
   },
   headlineContainer: {
     alignItems: 'center',
@@ -1277,7 +1175,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.pure_white,
     borderTopLeftRadius: s(28),
     borderTopRightRadius: s(28),
-    marginTop: vs(-28),
+    marginTop: vs(-60),
     paddingTop: vs(18),
     paddingHorizontal: s(20),
     shadowColor: '#000',
@@ -1286,6 +1184,11 @@ const styles = StyleSheet.create({
     shadowRadius: s(14),
     elevation: 18,
     minHeight: vs(380),
+  },
+
+  // ── Account form inner scroll (email tab only) ─────────────────────────────
+  accountFormScroll: {
+    flex: 1,
   },
 
   // ── 48dp Segmented Control ────────────────────────────────────────────────
@@ -1357,6 +1260,7 @@ const styles = StyleSheet.create({
   // ── Form Body ─────────────────────────────────────────────────────────────
   formBody: {
     width: '100%',
+    paddingBottom: vs(96), // clears sticky CTA footer when scrolled to bottom
   },
   labelRow: {
     flexDirection: 'row',

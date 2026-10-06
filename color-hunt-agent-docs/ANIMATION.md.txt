@@ -1,0 +1,75 @@
+# Color Hunt — Animation Spec
+
+Read this with `UI.md` and `design-tokens.json` before animating anything.
+All durations, easings and springs come from the `motion` tokens. This file says what moves, when, and why. The coding agent chooses the implementation.
+
+---
+
+## Motion philosophy
+
+- **Calm by default.** Most of the app is still. Motion appears when something changes or when the player acts.
+- **One signature moment: the color reveal.** It is the only animation allowed to be dramatic. Everything else is short and quiet.
+- **Motion explains.** It shows what changed (a submission arrived, the round paused, a decision was made). It is never decoration.
+- **No per-second flashing.** The countdown changes color at thresholds. It does not pulse every tick, which becomes tiring over a long session.
+
+---
+
+## Technical ground rules
+
+- Use `react-native-reanimated` v3. Anything that responds to touch or runs continuously runs on the UI thread.
+- Sequence animations with the library's delay and sequence tools. Do not chain `setTimeout` calls.
+- Only animate transform and opacity wherever possible. Avoid animating layout properties.
+- Every animation has a reduced-motion fallback (last column). When the system reduce-motion setting is on, skip decorative motion and use instant or very short opacity changes. Motion that directly answers a touch (button press, shutter) still plays but with no scale larger than the press scale.
+- Keep animation logic inside the component that owns the element. Shared timing values come from tokens only.
+
+---
+
+## Animation list
+
+| # | Name | Trigger | What moves | Timing | Reduced motion |
+|---|---|---|---|---|---|
+| 1 | Color reveal | The player's color arrives at round start | Hero swatch grows from 70% to 100% scale while fading in, glow fades in slightly later, then the color name fades up under it | Swatch: `spring.gentle`, fade `duration.reveal`. Glow: starts 200 ms later, `duration.reveal`. Name: starts after the swatch is visible, `duration.base` | Swatch and name fade in over `duration.fast`, no scale |
+| 2 | Button press | Touch down and up on any button | Button scales to `pressScale` and back | Down: `duration.instant`. Up: `spring.snappy` | Keep (it answers touch) |
+| 3 | Countdown thresholds | Remaining time reaches 10 and 5 seconds | Text color eases from `text.primary` to `status.warning` at 10 s, then to `status.danger` at 5 s | `duration.base` each | Same (color change only) |
+| 4 | Final seconds tick | Each second from 5 to 1 | A single small scale bump to 1.05 and back, plus a light haptic | Out `duration.instant`, back `spring.snappy` | Haptic only, no scale |
+| 5 | Pause banner | Round status becomes paused or resumes | Banner slides down from above the screen and fades in. On resume it slides up and out | In: `spring.gentle`. Out: `duration.base`, `easing.accelerate` | Fade only, `duration.fast` |
+| 6 | Submission acknowledgement | The player taps "Send photo" | The sheet closes, a thin success check scales in at the center for a moment, then the Round screen shows the paused state | Check: `spring.bouncy` in, fade out after 600 ms | Check appears and fades, no scale |
+| 7 | Shutter | Shutter tap | The shutter inner circle shrinks to 85% and springs back. The preview dips with a brief light flash at `scrim.flashLight` | Flash: 60 ms up, 140 ms down. Shutter: `duration.instant`, then `spring.snappy` | Keep the button press, drop the flash |
+| 8 | Photo to preview | After capture | The captured photo fades in over the live preview and the result sheet slides up from the bottom | Photo: `duration.base`. Sheet: `spring.gentle` | Fade only |
+| 9 | Review decision: approve | Host taps Approve | A soft green wash fades over the photo and a check icon scales in at the center | Wash: up to 24% opacity in `duration.fast`, out in `duration.slow`. Icon: `spring.bouncy` | Wash only |
+| 10 | Review decision: reject | Host taps Reject | A soft red wash fades over the photo and the photo shifts left and right three times with decreasing distance (max 6 px) | Wash as above. Shake total about 300 ms | Wash only, no shake |
+| 11 | Next submission | Reject with more photos queued | Current photo slides out left while the next slides in from the right | `duration.slow`, `easing.standard` | Cross-fade `duration.fast` |
+| 12 | Win moment | Result screen opens with a winner | Hero swatch reveal (same as #1), name fades up, then a short confetti burst | Confetti starts 400 ms after the swatch is visible. About 80 pieces, lasts under 3 seconds, uses only the seven game colors | No confetti. Swatch fades in |
+| 13 | Lobby join | A player appears in the list | The new row fades in and expands to its height. The count text cross-fades | `duration.base`, `easing.decelerate` | Instant |
+| 14 | Lobby leave | A player is removed | The row fades out and the list closes the gap | `duration.base`, `easing.accelerate` | Instant |
+| 15 | Home ambient | Home screen is idle | A very faint blurred game-color glow behind the title cross-fades slowly between the seven colors | About 6 seconds per color, linear fade, opacity never above the `gameGlow` value | Static single glow |
+| 16 | Loading dots | Waiting on analysis or network | Three small dots fade in and out one after the other in a loop | Each dot about 400 ms up and down, 160 ms offset | Three static dots |
+| 17 | Screen transitions | Navigating between screens | Default native slide for most screens. The Round screen fades and scales from 96% to 100% | Round: `duration.slow`, `easing.decelerate`. Others: platform default | Fade only |
+| 18 | Toast | A toast appears or leaves | Slides down 12 px while fading in, reverses on exit | In: `duration.fast`. Out: `duration.fast`, `easing.accelerate` | Fade only |
+
+---
+
+## Haptics
+
+Follow the `haptics` map in `design-tokens.json` through `expo-haptics`. Pair haptics with the animations above:
+
+| Moment | Haptic |
+|---|---|
+| Any button press | light |
+| Color revealed (#1) | medium |
+| Photo sent (#6) | light |
+| Approve (#9) | success |
+| Reject (#10) | warning |
+| Win (#12) | success |
+| Final seconds tick (#4) | light |
+
+Respect the system haptics setting. Never fire a haptic on a timer without a visible change.
+
+---
+
+## Performance budget
+
+- Target 60 fps on a mid-range Android phone.
+- At most two continuous animations run at once (for example loading dots plus the countdown color).
+- Confetti and the home ambient glow are the only animations allowed to run longer than one second, and neither runs while the camera is open.
+- Do not animate full-screen blurs. The home glow is a pre-blurred static view whose opacity animates.

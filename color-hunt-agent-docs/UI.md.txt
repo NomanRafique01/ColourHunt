@@ -1,0 +1,196 @@
+# Color Hunt — UI Design System
+
+Read this with `design-tokens.json`, `ANIMATIONS.md` and `COPY.md` before building any screen or component.
+Token names below (like `color.accent.base`) refer to entries in `design-tokens.json`. Never hardcode a value that exists there.
+
+---
+
+## Design intent
+
+Color Hunt is played for short, tense rounds on a phone, often in bright rooms and sometimes in the dark. The interface has two jobs: stay out of the way, and make the assigned color unmistakable.
+
+**Concept: a quiet gallery wall.** Everything except the game colors is a restrained, slightly cool neutral. The seven game colors are the only saturated things on screen, so the one memorable element is always the color the player has to find.
+
+**Eye comfort rules**
+- No pure black and no pure white anywhere. Backgrounds use `color.bg.base`, text uses `color.text.primary`.
+- The accent (`color.accent.base`) is a soft indigo, deliberately desaturated. It marks primary actions, focus and selection only.
+- Large areas are always neutral. Saturated color covers at most the hero swatch and small chips.
+- Glow effects are faint (`elevation.gameGlow`) and appear only behind the hero swatch.
+- Dark text sits on every game color and every accent fill (`color.text.onGame`, `color.text.onAccent`), which keeps contrast above 4.5:1 and avoids glaring white-on-color.
+- Meaning is never carried by color alone. Approve and reject also use icons and labels. Match strength also uses words.
+
+**Restraint rules**
+- One memorable element per screen. Everything around it is quiet.
+- No gradients as decoration. The only gradient is the scrim that fades photos into the background.
+- No all-caps labels, no tracked-out eyebrow labels, no numbered decoration, no emoji in the interface.
+- Sentence case everywhere. See `COPY.md`.
+
+---
+
+## Typography
+
+Two families, clearly different jobs.
+
+| Role | Family | Token size | Weight | Color |
+|---|---|---|---|---|
+| Game title | Outfit | `display` | Bold | `text.primary` |
+| Screen title | Outfit | `title` | SemiBold | `text.primary` |
+| Section heading | Outfit | `heading` | SemiBold | `text.primary` |
+| Assigned color name | Outfit | `display` | Bold | the game color `base` |
+| Countdown | Outfit | `timer` | SemiBold, fixed-width digits | `text.primary` (state colors in ANIMATIONS.md) |
+| Room code | Outfit | `title` | Bold | `accent.base` |
+| Body | DM Sans | `body` | Regular | `text.secondary` |
+| Button label | DM Sans | `body` | Bold | depends on button |
+| Field label, list item name | DM Sans | `label` | Medium | `text.primary` |
+| Caption, metadata | DM Sans | `caption` | Regular | `text.muted` |
+
+Rules
+- Digits in the countdown must be fixed-width so the timer does not jitter as numbers change.
+- Line length stays under 50 characters on a phone. Body copy is short by design.
+- `text.muted` is for placeholders, disabled text and captions only. Never use it for information a player needs to act on.
+
+---
+
+## Layout
+
+- 4pt grid from `space`. Screen horizontal padding is `space.4`. Content is capped at `size.contentMaxWidth` and centered on larger screens.
+- Primary actions live in the bottom third of the screen where the thumb reaches. Always inside the safe area.
+- Touch targets are at least `size.touchTargetMin`.
+- Radius hierarchy: inputs and chips use `radius.md`, cards use `radius.lg`, the hero swatch uses `radius.xl`, pills use `radius.full`. Do not use one radius for everything.
+- Surfaces separate by background step (`bg.base`, then `bg.surface`, then `bg.raised`) plus a `border.subtle` hairline. Shadows are secondary.
+
+---
+
+## Components
+
+### Buttons
+All buttons: height `size.buttonHeight`, radius `radius.md`, label in DM Sans Bold `body`, full width by default, press feedback per ANIMATIONS.md, a loading state that swaps the label for a small spinner without changing the button width.
+
+| Variant | Fill | Label | Border | Used for |
+|---|---|---|---|---|
+| Primary | `accent.base` | `text.onAccent` | none | One main action per screen |
+| Secondary | transparent | `text.primary` | `border.strong` 1.5 | Second action beside a primary |
+| Quiet | transparent | `text.secondary` | none | Back, cancel, leave |
+| Approve | `status.success` | `text.onAccent` + check icon | none | Host accepts a photo |
+| Reject | `status.dangerSubtle` | `status.danger` + close icon | `status.danger` at 40% | Host declines a photo |
+
+States: pressed uses `accent.pressed` (or a slightly darker fill for other variants). Disabled uses `opacity.disabled` with no press feedback. Focus (for keyboard or switch access) shows a 2 px `border.focus` ring.
+
+### Text input
+Height `size.inputHeight`, fill `bg.surface`, border 1.5 `border.subtle`, radius `radius.md`, text `text.primary`, placeholder `text.muted`. Focused border is `border.focus`. Error border is `status.danger` with the message in `status.danger` below the field. Label sits above the field in `label` style.
+
+### Room code field and display
+Four separate cells, each `size.codeCellWidth` by `size.codeCellHeight`, `bg.surface`, 1.5 `border.subtle`, `radius.md`. Characters are Outfit Bold `title` in `accent.base`. The active cell has a `border.focus` border. A filled display (lobby) uses the same cells with a `accent.subtle` fill instead of an input.
+
+### Card
+`bg.surface`, 1 px `border.subtle`, `radius.lg`, padding `space.4`, `elevation.level1`. Used sparingly. Not every group of content needs a card.
+
+### Player row
+Height at least `size.touchTargetMin`. `bg.surface`, `radius.md`, padding `space.3`.
+- Filled: a color dot (`size.swatchChip` ring using the player's assigned color once the round starts, `accent.base` before), the name in `label` style, a small "Host" pill (`accent.subtle` fill, `accent.base` text) on the host.
+- Empty: dashed `border.subtle` outline, "Waiting for a player" in `text.muted`. No icon.
+
+### Hero swatch
+`size.swatchHero` square, `radius.xl`, filled with the game color `base`, a 1 px inner rim of `text.primary` at 12% opacity, and `elevation.gameGlow` in that color's `glow`. This is the single loudest element in the app.
+
+### Color chip
+`size.swatchChip` circle in the game color `base`. Used in lists, the camera overlay and review headers.
+
+### Match strength badge
+Pill, `radius.full`, padding `space.2` by `space.3`, DM Sans Medium `label`. Always shows a word plus the percentage.
+
+| Score | Word | Fill | Text |
+|---|---|---|---|
+| 70 and above | Strong match | `status.successSubtle` | `status.success` |
+| 40 to 69 | Possible match | `status.warningSubtle` | `status.warning` |
+| Below 40 | Weak match | `status.dangerSubtle` | `status.danger` |
+
+### Attempt dots
+Three circles of `size.attemptDot`. Remaining attempts are filled `accent.base`. Used attempts are outlined in `border.strong`. A text label ("2 attempts left") sits beside them for accessibility.
+
+### Status banner
+Full width, below the status bar, padding `space.3` by `space.4`, a 3 px leading edge in the status color, fill is the matching `Subtle` token, text in DM Sans Medium `label`. Variants: paused (warning), reconnecting (danger), info (accent).
+
+### Toast
+Floating below the status bar, `bg.overlay`, `radius.md`, `elevation.level2`, 3 px leading edge in the status color, auto-dismiss after 3 seconds. One toast at a time.
+
+### Modal
+`scrim.modal` behind, panel in `bg.raised`, `radius.xl`, padding `space.6`, one primary action and an optional quiet action.
+
+---
+
+## Screens
+
+### Home
+- Vertically centered stack with a slight upward bias. Game title in `display`, one line of tagline in `body` under it.
+- Name field with label, then the Primary button "Create room", then the Secondary button "Join room".
+- Nothing else. No decorative graphics. A single faint game-color blur behind the title is allowed, at the `gameGlow` opacity, cycling slowly through the seven colors (see ANIMATIONS.md).
+
+### Join room
+- Header with Quiet back button and the title "Join room".
+- Short instruction, the four-cell code input, Primary "Join". Invalid code shows the inline error and a red border, no modal.
+
+### Lobby (host and players)
+- Header: back, title "Lobby".
+- Room code card: the four-cell display, with a caption "Friends join with this code". A Secondary "Copy code" button.
+- Player list: four player rows. The count "3 of 4 players" sits above the primary button.
+- Host sees Primary "Start game", disabled until two players are present, with the caption "Waiting for at least 2 players". Players see a calm status line "Waiting for the host to start".
+
+### Round
+Three zones, top to bottom.
+1. Info bar: "Round 1" left, "3 players" right, in `caption`.
+2. Hero: the hero swatch centered, the color name in `display` below it in that color, and one line of `body` "Find something this color". This takes roughly half the screen.
+3. Controls: the countdown, then attempt dots with their label, then Primary "Take photo".
+When paused, the status banner slides in at the top and "Take photo" becomes disabled with the label "Waiting for review".
+
+### Camera
+- Full-bleed rear camera preview. No gallery button anywhere.
+- Top: Quiet "Cancel" in a translucent chip on the left, a color chip with the color name on the right (translucent `bg.base` at 60%).
+- Bottom: a scrim, then the shutter (`size.shutterOuter` ring, `size.shutterInner` fill in `text.primary`).
+- After capture the photo fills the screen. A bottom sheet on `bg.raised` shows the match strength badge (or "Checking color" with the loading dots while analyzing), the Primary "Send photo" and the Quiet "Retake".
+
+### Review (host only)
+- Top 55% is the photo, full bleed, fading into `bg.base` with `scrim.photoBottom`.
+- Below: player name with their color chip, the match strength badge, and a quiet caption "Auto-decision in 45s".
+- Secondary "Check color" opens a sheet listing the dominant colors detected as small chips, the color distance as a plain-language strength, and the same badge.
+- Two buttons side by side: Reject and Approve, equal width.
+- If the host is the one who submitted, this screen is replaced by a vote screen for the other players with the same two buttons.
+
+### Result
+- Win: the hero swatch in the winner's color, the winner's name in `title`, "Found it first" in `body`, the time in `caption`, then a row of thumbnails with names and times.
+- No winner: a neutral clock icon, "Time's up" in `title`, "Nobody matched the color this round" in `body`, and the thumbnails row.
+- Buttons: Primary "Play again" (host only) and Quiet "Leave game".
+
+---
+
+## States
+
+- **Loading a screen:** centered small spinner in `accent.base` with a one-line status in `body`, for example "Joining room". Never a blank screen.
+- **Analyzing a photo:** the three loading dots with the words "Checking color".
+- **Empty player slot:** the dashed outline described under Player row.
+- **Connection lost:** the reconnecting banner at the top. Gameplay controls stay visible but disabled.
+- **Host left:** a modal titled "Room closed" with one Primary button "Back to home".
+- **Errors:** inline where possible, toast otherwise. Say what happened and what to do. Never show raw backend messages.
+
+---
+
+## Icons
+
+Use `Ionicons` from `@expo/vector-icons`, outline style, sizes from `size.iconSm`, `size.iconMd` and `size.iconLg`. Colors always come from tokens. Icons support labels and never replace them, except the shutter and the back arrow.
+
+---
+
+## Sound and haptics
+
+- Haptic feedback follows the `haptics` map in `design-tokens.json` through `expo-haptics`. Haptics respect the system setting.
+- Sound is out of scope for the first build. Leave no placeholder files for it.
+
+---
+
+## Accessibility floor
+
+- Text contrast of 4.5:1 or higher for anything a player must read.
+- Every touchable element has an accessibility label that matches its visible text.
+- The countdown is announced to screen readers at 30, 10 and 5 seconds, not every second.
+- Reduced motion is respected everywhere (see ANIMATIONS.md).
+- Layouts remain usable with the system font size at 130%.

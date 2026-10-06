@@ -17,10 +17,26 @@ export default function LoadingScreen() {
   const navigation = useNavigation<NavigationProp>()
 
   useEffect(() => {
-    const transition = setTimeout(() => navigation.replace('MainTabs'), 2500)
+    let mounted = true
+    const timer = setTimeout(async () => {
+      try {
+        const { getActiveSession } = require('../lib/api/authService')
+        const res = await getActiveSession()
+        if (!mounted) return
+        if (res?.success && res?.user) {
+          navigation.replace('MainTabs')
+        } else {
+          navigation.replace('Auth')
+        }
+      } catch {
+        if (!mounted) return
+        navigation.replace('Auth')
+      }
+    }, 2500)
 
     return () => {
-      clearTimeout(transition)
+      mounted = false
+      clearTimeout(timer)
     }
   }, [navigation])
 

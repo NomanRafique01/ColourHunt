@@ -6,9 +6,13 @@ export interface PlayerState {
   assignedColor: string | null
   submissionCount: number
   isHost: boolean
+  isAnonymous: boolean
+  // Derived convenience: true when userId is set
+  isLoggedIn: boolean
   setUserId: (userId: string | null) => void
   setDisplayName: (name: string) => void
   setAssignedColor: (color: string | null) => void
+  setIsAnonymous: (anon: boolean) => void
   incrementSubmissionCount: () => void
   resetSubmissionCount: () => void
   setIsHost: (isHost: boolean) => void
@@ -21,9 +25,12 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   assignedColor: null,
   submissionCount: 0,
   isHost: false,
-  setUserId: (userId) => set({ userId }),
+  isAnonymous: false,
+  isLoggedIn: false,
+  setUserId: (userId) => set({ userId, isLoggedIn: !!userId }),
   setDisplayName: (displayName) => set({ displayName }),
   setAssignedColor: (assignedColor) => set({ assignedColor }),
+  setIsAnonymous: (isAnonymous) => set({ isAnonymous }),
   incrementSubmissionCount: () =>
     set((state) => ({ submissionCount: state.submissionCount + 1 })),
   resetSubmissionCount: () => set({ submissionCount: 0 }),
@@ -35,5 +42,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
       assignedColor: null,
       submissionCount: 0,
       isHost: false,
+      isAnonymous: false,
+      isLoggedIn: false,
     }),
 }))

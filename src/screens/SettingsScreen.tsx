@@ -11,13 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { APP_THEME, COLORS } from '../constants/colors'
 import { s, vs, ms } from '../utils/scale'
 import { SpectrumLensLogo } from '../../assets/svg/SpectrumLensLogo'
+import { usePlayerStore } from '../store/player'
 const loadingArtwork = require('../../assets/loading-artwork.png')
-
-type MenuItem = {
-  icon: React.ReactNode
-  title: string
-  subtitle: string
-}
 
 function GearIcon({ color }: { color: string }) {
   return (
@@ -123,6 +118,10 @@ const MENU_ITEMS = [
 ]
 
 export default function SettingsScreen() {
+  const displayName = usePlayerStore((s) => s.displayName) || 'Hunter'
+  const isAnonymous = usePlayerStore((s) => s.isAnonymous)
+  const playerInitial = displayName.charAt(0).toUpperCase()
+
   return (
     <SafeAreaView style={settingsStyles.safeArea}>
       {/* Top Nav */}
@@ -148,12 +147,13 @@ export default function SettingsScreen() {
         {/* Profile Card */}
         <View style={settingsStyles.profileCard}>
           <View style={settingsStyles.avatarCircle}>
-            <View style={settingsStyles.avatarHead} />
-            <View style={settingsStyles.avatarBody} />
+            <Text style={settingsStyles.avatarInitial}>{playerInitial}</Text>
           </View>
           <View style={settingsStyles.profileInfo}>
-            <Text style={settingsStyles.profileName}>Noman</Text>
-            <Text style={settingsStyles.profileRole}>Player</Text>
+            <Text style={settingsStyles.profileName}>{displayName}</Text>
+            <Text style={settingsStyles.profileRole}>
+              {isAnonymous ? 'Guest Hunter' : 'Player'}
+            </Text>
           </View>
           <ChevronRight />
         </View>
@@ -262,6 +262,11 @@ const settingsStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: s(14),
+  },
+  avatarInitial: {
+    fontSize: ms(22),
+    fontWeight: '800',
+    color: APP_THEME.primary,
   },
   avatarHead: {
     width: s(18),

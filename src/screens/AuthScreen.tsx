@@ -6,7 +6,6 @@ import {
   Dimensions,
   Easing,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StatusBar,
@@ -341,8 +340,9 @@ export default function AuthScreen() {
   const isFocused = useIsFocused()
   const setUserId = usePlayerStore((s) => s.setUserId)
   const setDisplayName = usePlayerStore((s) => s.setDisplayName)
+  const setIsAnonymous = usePlayerStore((s) => s.setIsAnonymous)
 
-  // Auth Modes: 'guest' | 'email'
+  const heroHeight = IS_SMALL_SCREEN ? vs(220) : vs(240)
   const [authMode, setAuthMode] = useState<'guest' | 'email'>('guest')
   // Email Submode: 'signin' | 'signup'
   const [emailSubMode, setEmailSubMode] = useState<'signin' | 'signup'>('signin')
@@ -359,6 +359,12 @@ export default function AuthScreen() {
   const [emailFocused, setEmailFocused] = useState(false)
   const [passFocused, setPassFocused] = useState(false)
   const [signUpNameFocused, setSignUpNameFocused] = useState(false)
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const isScrolledUpRef = useRef(false)
+  const authModeRef = useRef(authMode)
+  useEffect(() => {
+    authModeRef.current = authMode
+  }, [authMode])
 
   // Feedback & Loading
   const [loading, setLoading] = useState(false)
@@ -369,12 +375,20 @@ export default function AuthScreen() {
   const nameValidation = validateHunterName(guestName)
   const isGuestValid = nameValidation.valid
 
-  // ── Entrance & Keyboard Animations ────────────────────────────────────────
+  // ── Entrance Animations ───────────────────────────────────────────────────
   const heroFadeAnim = useRef(new Animated.Value(0)).current
   const sheetSlideAnim = useRef(new Animated.Value(80)).current
-  const heroCollapseAnim = useRef(new Animated.Value(0)).current // 0 = full, 1 = compact
   const tabSlideAnim = useRef(new Animated.Value(0)).current     // 0 = guest, 1 = email
   const diceRollAnim = useRef(new Animated.Value(0)).current
+  // 0 = keyboard hidden, 1 = keyboard shown (drives footer slide-out + hero focus mode)
+  const keyboardAnim = useRef(new Animated.Value(0)).current
+
+  // Input refs for smooth keyboard transitions & focus locking
+  const guestInputRef = useRef<TextInput>(null)
+  const signUpNameInputRef = useRef<TextInput>(null)
+  const emailInputRef = useRef<TextInput>(null)
+  const passwordInputRef = useRef<TextInput>(null)
+  const scrollViewRef = useRef<ScrollView>(null)
 
   // Load last used name on mount
   useEffect(() => {
@@ -391,6 +405,61 @@ export default function AuthScreen() {
 
     return () => sub.remove()
   }, [])
+
+  // ── Move window up when keyboard appears (Account tab only; Guest tab stays in place) ─
+  const scrollToTopTarget = useCallback(() => {
+    if (authModeRef.current === 'guest') return
+    if (isScrolledUpRef.current) return
+    isScrolledUpRef.current = true
+    const targetY = Math.max(0, heroHeight - vs(15))
+    scrollViewRef.current?.scrollTo({ y: targetY, animated: true })
+  }, [heroHeight])
+
+  const scrollToBottomTarget = useCallback(() => {
+    if (!isScrolledUpRef.current) return
+    isScrolledUpRef.current = false
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true })
+  }, [])
+
+  const handleInputFocus = useCallback(() => {
+    setKeyboardVisible(true)
+    scrollToTopTarget()
+  }, [scrollToTopTarget])
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true)
+      scrollToTopTarget()
+    })
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false)
+      scrollToBottomTarget()
+    })
+
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [scrollToTopTarget, scrollToBottomTarget])
+
+  // ── While typing: hero calms down into focus mode (Account tab only) ──
+  useEffect(() => {
+    const isEmailTyping = keyboardVisible && authMode === 'email'
+    if (reduceMotion) {
+      keyboardAnim.setValue(isEmailTyping ? 1 : 0)
+      return
+    }
+    Animated.timing(keyboardAnim, {
+      toValue: isEmailTyping ? 1 : 0,
+      duration: 200,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start()
+  }, [keyboardVisible, authMode, reduceMotion, keyboardAnim])
 
   // ── Entrance Sequence (Hero fade in, sheet slide up) ──────────────────────
   useEffect(() => {
@@ -416,46 +485,12 @@ export default function AuthScreen() {
     ]).start()
   }, [reduceMotion, heroFadeAnim, sheetSlideAnim])
 
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
-
-  // ── Keyboard listeners for smooth hero collapse (200ms) ───────────────────
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
-        setIsKeyboardVisible(true)
-        Animated.timing(heroCollapseAnim, {
-          toValue: 1,
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }).start()
-      }
-    )
-
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setIsKeyboardVisible(false)
-        Animated.timing(heroCollapseAnim, {
-          toValue: 0,
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }).start()
-      }
-    )
-
-    return () => {
-      showSub.remove()
-      hideSub.remove()
-    }
-  }, [heroCollapseAnim])
-
   // ── Tab switch animation ──────────────────────────────────────────────────
   const handleSwitchTab = (mode: 'guest' | 'email') => {
     if (mode === authMode) return
     triggerHaptic('light')
+    Keyboard.dismiss()
+    scrollToBottomTarget()
     setAuthMode(mode)
     setToastError(null)
 
@@ -487,40 +522,53 @@ export default function AuthScreen() {
 
   // ── Submit Guest ──────────────────────────────────────────────────────────
   const handleGuestSubmit = async () => {
-    const val = validateHunterName(guestName)
-    if (!val.valid) {
-      triggerHaptic('warning')
-      return
+    Keyboard.dismiss()
+    const trimmed = guestName.trim()
+    const finalName = trimmed || generateHunterName()
+    if (!trimmed) {
+      setGuestName(finalName)
     }
 
     setLoading(true)
     setToastError(null)
 
     try {
-      const trimmed = guestName.trim()
-      await AsyncStorage.setItem(STORAGE_LAST_NAME_KEY, trimmed)
+      await AsyncStorage.setItem(STORAGE_LAST_NAME_KEY, finalName)
 
-      const res = await signInAsGuest(trimmed)
-      if (!res.success || !res.user) {
-        setLoading(false)
-        triggerHaptic('warning')
-        setToastError(res.error || "Can't connect. Check your internet and try again.")
-        return
+      let guestUserId = `guest_${Date.now()}`
+      let guestDisplayName = finalName
+
+      try {
+        const res = await signInAsGuest(finalName)
+        if (res.success && res.user) {
+          guestUserId = res.user.id
+          guestDisplayName = res.profile?.displayName || finalName
+        } else {
+          console.warn('Guest sign in offline/fallback mode:', res.error)
+        }
+      } catch (err) {
+        console.warn('Guest sign in network error, fallback mode:', err)
       }
 
       triggerHaptic('success')
-      setUserId(res.user.id)
-      setDisplayName(res.profile?.displayName || trimmed)
+      setUserId(guestUserId)
+      setDisplayName(guestDisplayName)
+      setIsAnonymous(true)
       navigation.replace('MainTabs')
     } catch {
+      triggerHaptic('success')
+      setUserId(`guest_${Date.now()}`)
+      setDisplayName(finalName)
+      setIsAnonymous(true)
+      navigation.replace('MainTabs')
+    } finally {
       setLoading(false)
-      triggerHaptic('warning')
-      setToastError("Can't connect. Check your internet and try again.")
     }
   }
 
   // ── Submit Email ──────────────────────────────────────────────────────────
   const handleEmailSubmit = async () => {
+    Keyboard.dismiss()
     setToastError(null)
 
     if (!email.trim() || !password.trim()) {
@@ -576,20 +624,6 @@ export default function AuthScreen() {
   }
 
   // ── Interpolations ────────────────────────────────────────────────────────
-  const fullHeroH = IS_SMALL_SCREEN ? vs(300) : vs(330)
-  const collapsedHeroH = vs(64)
-  const currentHeroH = isKeyboardVisible ? collapsedHeroH : fullHeroH
-
-  const heroContentOpacity = heroCollapseAnim.interpolate({
-    inputRange: [0, 0.4, 1],
-    outputRange: [1, 0, 0],
-  })
-
-  const cameraScale = heroCollapseAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.4],
-  })
-
   const diceSpin = diceRollAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -603,506 +637,563 @@ export default function AuthScreen() {
     outputRange: [0, TAB_WIDTH],
   })
 
-
-
-
-
   const isAccountValid =
     email.trim().length > 3 &&
     password.trim().length >= 6 &&
     (emailSubMode === 'signin' || signUpName.trim().length >= 3)
 
-  const isCurrentFormValid = authMode === 'guest' ? isGuestValid : isAccountValid
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={HERO_TOP} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-          <View style={{ flex: 1 }}>
-            {/* ══════════════════════════════════════════════════════════════════
-                HERO SECTION (Takes extra vertical space with flex)
-                ══════════════════════════════════════════════════════════════════ */}
-            <Animated.View
-              style={[
-                styles.heroOuter,
-                {
-                  height: currentHeroH,
-                  opacity: heroFadeAnim,
-                },
-              ]}
+      <View style={styles.contentWrapper}>
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.mainScrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: heroHeight + vs(60) + Math.max(insets.bottom, vs(20)),
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          automaticallyAdjustKeyboardInsets={false}
+          bounces={false}
+          overScrollMode="never"
+          removeClippedSubviews={false}
+        >
+          {/* ══════════════════════════════════════════════════════════════════
+              HERO SECTION (Stable, proportional, never unmounts or jumps)
+              ══════════════════════════════════════════════════════════════════ */}
+          <Animated.View
+            style={[
+              styles.heroOuter,
+              {
+                height: heroHeight,
+                opacity: heroFadeAnim,
+              },
+            ]}
+          >
+            {/* SVG Full-Bleed Gradient */}
+            <Svg
+              width={SCREEN_W}
+              height={heroHeight}
+              style={[StyleSheet.absoluteFill, { left: 0 }]}
+              preserveAspectRatio="none"
+              pointerEvents="none"
             >
-              {/* SVG Full-Bleed Gradient */}
-              <Svg
-                width={SCREEN_W}
-                height={currentHeroH}
-                style={[StyleSheet.absoluteFill, { left: 0 }]}
-                preserveAspectRatio="none"
-                pointerEvents="none"
+              <Defs>
+                <LinearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%" stopColor={HERO_TOP} stopOpacity="1" />
+                  <Stop offset="1" stopColor={HERO_BOT} stopOpacity="1" />
+                </LinearGradient>
+              </Defs>
+              <Rect x="0" y="0" width={SCREEN_W} height={heroHeight} fill="url(#heroGrad)" />
+            </Svg>
+
+            {/* 4 Large Fake Blur Radial-Gradient Circles */}
+            <FakeBlurAtmosphere isFocused={isFocused} reduceMotion={reduceMotion} />
+
+            {/* Wordmark Header */}
+            <View style={styles.topWordmarkRow}>
+              <Text style={styles.navWordmark}>
+                Colour<Text style={styles.navWordmarkAccent}>Hunt</Text>
+              </Text>
+            </View>
+
+            {/* "The Hunt" Animated Hero Art / Logo */}
+            <View style={styles.heroLogoContainer} pointerEvents="box-none">
+              <LoginHuntArt
+                isFocused={isFocused}
+                reduceMotion={reduceMotion}
+                isKeyboardVisible={keyboardVisible && authMode === 'email'}
+              />
+            </View>
+          </Animated.View>
+
+          {/* ══════════════════════════════════════════════════════════════════
+              WHITE SHEET (Slides up 340ms ease-out)
+              ══════════════════════════════════════════════════════════════════ */}
+          <Animated.View
+            style={[
+              styles.sheet,
+              {
+                paddingBottom: Math.max(insets.bottom, vs(20)) + vs(16),
+                transform: [{ translateY: sheetSlideAnim }],
+              },
+            ]}
+          >
+            {/* 48dp Segmented Control with Sliding White Indicator */}
+            <View style={styles.segmentedContainer}>
+              {/* Sliding indicator */}
+              <Animated.View
+                style={[
+                  styles.slidingIndicator,
+                  {
+                    width: TAB_WIDTH,
+                    transform: [{ translateX: indicatorTranslateX }],
+                  },
+                ]}
+              />
+
+              {/* Tab 1: Quick Guest */}
+              <TouchableOpacity
+                style={styles.segmentTab}
+                onPress={() => handleSwitchTab('guest')}
+                activeOpacity={0.85}
+                accessibilityRole="tab"
+                accessibilityLabel="Quick Guest Tab"
               >
-                <Defs>
-                  <LinearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor={HERO_TOP} stopOpacity="1" />
-                    <Stop offset="1" stopColor={HERO_BOT} stopOpacity="1" />
-                  </LinearGradient>
-                </Defs>
-                <Rect x="0" y="0" width={SCREEN_W} height={currentHeroH} fill="url(#heroGrad)" />
-              </Svg>
-
-              {/* 4 Large Fake Blur Radial-Gradient Circles */}
-              <FakeBlurAtmosphere isFocused={isFocused} reduceMotion={reduceMotion} />
-
-              {/* Wordmark Header (No small logo tile) */}
-              <View style={styles.topWordmarkRow}>
-                <Text style={styles.navWordmark}>
-                  Colour<Text style={styles.navWordmarkAccent}>Hunt</Text>
+                <Ionicons
+                  name="flash"
+                  size={s(16)}
+                  color={authMode === 'guest' ? APP_THEME.primary : COLORS.gray700}
+                />
+                <Text
+                  style={[
+                    styles.segmentTabText,
+                    authMode === 'guest'
+                      ? styles.segmentTabTextActive
+                      : styles.segmentTabTextInactive,
+                  ]}
+                >
+                  Quick Guest
                 </Text>
-              </View>
+              </TouchableOpacity>
 
-              {/* Collapsing Content: Camera + Cropped Polaroids + Headlines */}
-              {!isKeyboardVisible && (
-                <Animated.View
-                  style={[
-                    styles.heroExpandingBody,
-                    {
-                      opacity: heroContentOpacity,
-                      transform: [{ scale: cameraScale }],
-                    },
-                  ]}
-                  pointerEvents="box-none"
-                >
-                {/* "The Hunt" Animated Hero Art */}
-                <LoginHuntArt
-                  isFocused={isFocused}
-                  reduceMotion={reduceMotion}
-                  isKeyboardVisible={isKeyboardVisible}
+              {/* Tab 2: Account */}
+              <TouchableOpacity
+                style={styles.segmentTab}
+                onPress={() => handleSwitchTab('email')}
+                activeOpacity={0.85}
+                accessibilityRole="tab"
+                accessibilityLabel="Account Tab"
+              >
+                <Ionicons
+                  name="person-circle-outline"
+                  size={s(17)}
+                  color={authMode === 'email' ? APP_THEME.primary : COLORS.gray700}
                 />
+                <Text
+                  style={[
+                    styles.segmentTabText,
+                    authMode === 'email'
+                      ? styles.segmentTabTextActive
+                      : styles.segmentTabTextInactive,
+                  ]}
+                >
+                  Account
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-                {/* Headline: "Find the Colour" (white) */}
-                <View style={styles.headlineContainer}>
-                  <Text style={styles.heroTitle}>Find the Colour</Text>
+            {/* Toast Error Banner (with Retry) */}
+            {toastError ? (
+              <View style={styles.toastErrorBox}>
+                <Ionicons name="alert-circle" size={s(18)} color={COLORS.red700} />
+                <Text style={styles.toastErrorText}>{toastError}</Text>
+                <TouchableOpacity
+                  onPress={() => setToastError(null)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={s(16)} color={COLORS.red700} />
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            {/* ────────────────────────────────────────────────────────────
+                TAB 1: QUICK GUEST
+                ──────────────────────────────────────────────────────────── */}
+            {authMode === 'guest' ? (
+              <View style={styles.formBody}>
+                {/* Label: Sentence case, 13sp, dark gray */}
+                <View style={styles.labelRow}>
+                  <Text style={styles.sentenceCaseLabel}>Your hunter name</Text>
+                  <Text style={styles.charCounter}>{`${guestName.length}/16`}</Text>
                 </View>
-              </Animated.View>
-            )}
-            </Animated.View>
 
-            {/* ══════════════════════════════════════════════════════════════════
-                WHITE SHEET (Slides up 300ms ease-out)
-                ══════════════════════════════════════════════════════════════════ */}
-            <Animated.View
-              style={[
-                styles.sheet,
-                { transform: [{ translateY: sheetSlideAnim }] },
-              ]}
-            >
-              {/* 48dp Segmented Control with Sliding White Indicator */}
-              <View style={styles.segmentedContainer}>
-                {/* Sliding indicator */}
-                <Animated.View
+                {/* 54dp tall Input Box with Constant Border & Smooth Focus */}
+                <View
                   style={[
-                    styles.slidingIndicator,
-                    {
-                      width: TAB_WIDTH,
-                      transform: [{ translateX: indicatorTranslateX }],
-                    },
+                    styles.tallInputRow,
+                    nameFocused && styles.tallInputRowFocused,
+                    !isGuestValid && guestName.length > 0 && styles.tallInputRowError,
                   ]}
-                />
-
-                {/* Tab 1: Quick Guest */}
-                <TouchableOpacity
-                  style={styles.segmentTab}
-                  onPress={() => handleSwitchTab('guest')}
-                  activeOpacity={0.85}
-                  accessibilityRole="tab"
-                  accessibilityLabel="Quick Guest Tab"
                 >
-                  <Ionicons
-                    name="flash"
-                    size={s(16)}
-                    color={authMode === 'guest' ? APP_THEME.primary : COLORS.gray700}
+                  <TextInput
+                    ref={guestInputRef}
+                    style={styles.tallTextInput}
+                    value={guestName}
+                    onChangeText={(t) => {
+                      setGuestName(t)
+                      if (toastError) setToastError(null)
+                    }}
+                    onFocus={() => {
+                      setNameFocused(true)
+                      handleInputFocus()
+                    }}
+                    onBlur={() => setNameFocused(false)}
+                    placeholder="e.g. CobaltHunter"
+                    placeholderTextColor={COLORS.gray400}
+                    selectionColor={APP_THEME.primary}
+                    cursorColor={APP_THEME.primary}
+                    maxLength={16}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    importantForAutofill="no"
+                    returnKeyType="go"
+                    blurOnSubmit={true}
+                    onSubmitEditing={handleGuestSubmit}
+                    accessibilityLabel="Your hunter name"
                   />
-                  <Text
-                    style={[
-                      styles.segmentTabText,
-                      authMode === 'guest'
-                        ? styles.segmentTabTextActive
-                        : styles.segmentTabTextInactive,
-                    ]}
-                  >
-                    Quick Guest
-                  </Text>
-                </TouchableOpacity>
 
-                {/* Tab 2: Account */}
-                <TouchableOpacity
-                  style={styles.segmentTab}
-                  onPress={() => handleSwitchTab('email')}
-                  activeOpacity={0.85}
-                  accessibilityRole="tab"
-                  accessibilityLabel="Account Tab"
-                >
-                  <Ionicons
-                    name="person-circle-outline"
-                    size={s(17)}
-                    color={authMode === 'email' ? APP_THEME.primary : COLORS.gray700}
-                  />
-                  <Text
-                    style={[
-                      styles.segmentTabText,
-                      authMode === 'email'
-                        ? styles.segmentTabTextActive
-                        : styles.segmentTabTextInactive,
-                    ]}
-                  >
-                    Account
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                  {/* Clear Button */}
+                  {guestName.length > 0 && (
+                    <TouchableOpacity
+                      style={styles.clearBtn}
+                      onPress={() => {
+                        setGuestName('')
+                        triggerHaptic('light')
+                        guestInputRef.current?.focus()
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="close-circle" size={s(18)} color={COLORS.gray400} />
+                    </TouchableOpacity>
+                  )}
 
-              {/* Toast Error Banner (with Retry) */}
-              {toastError ? (
-                <View style={styles.toastErrorBox}>
-                  <Ionicons name="alert-circle" size={s(18)} color={COLORS.red700} />
-                  <Text style={styles.toastErrorText}>{toastError}</Text>
+                  {/* 40dp Random Dice Chip with 44dp tap target */}
                   <TouchableOpacity
-                    onPress={() => setToastError(null)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.randomChip}
+                    onPress={handleRollRandomName}
+                    activeOpacity={0.75}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                    accessibilityLabel="Randomize hunter name"
                   >
-                    <Ionicons name="close" size={s(16)} color={COLORS.red700} />
+                    <Animated.View style={{ transform: [{ rotate: diceSpin }] }}>
+                      <Ionicons name="dice-outline" size={s(18)} color={APP_THEME.primary} />
+                    </Animated.View>
+                    <Text style={styles.randomChipText}>Random</Text>
                   </TouchableOpacity>
                 </View>
-              ) : null}
 
-              {/* ────────────────────────────────────────────────────────────
-                  TAB 1: QUICK GUEST
-                  ──────────────────────────────────────────────────────────── */}
-              {authMode === 'guest' ? (
-                <View style={styles.formBody}>
-                  {/* Label: Sentence case, 13sp, dark gray */}
-                  <View style={styles.labelRow}>
-                    <Text style={styles.sentenceCaseLabel}>Your hunter name</Text>
-                    <Text style={styles.charCounter}>{`${guestName.length}/16`}</Text>
+                {/* Inline Error Message */}
+                {!isGuestValid && guestName.length > 0 && (
+                  <View style={styles.inlineErrorRow}>
+                    <Ionicons name="alert-circle-outline" size={s(14)} color={COLORS.red600} />
+                    <Text style={styles.inlineErrorText}>{nameValidation.error}</Text>
                   </View>
+                )}
 
-                  {/* 56dp tall Input Box with Focus Glow & Clear (x) */}
+                {/* Shortened Blue Info Note */}
+                <View style={styles.blueInfoNote}>
+                  <Ionicons name="information-circle" size={s(18)} color={ACCENT.blue.base} />
+                  <Text style={styles.blueInfoText}>
+                    No password needed. Link an email anytime in Settings.
+                  </Text>
+                </View>
+
+                {/* Primary Action Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.primaryBtn,
+                    styles.btnEnabled,
+                    loading && styles.btnDisabled,
+                  ]}
+                  onPress={handleGuestSubmit}
+                  disabled={loading}
+                  activeOpacity={0.88}
+                >
+                  {loading ? (
+                    <View style={styles.loadingRow}>
+                      <ActivityIndicator color={COLORS.pure_white} size="small" />
+                      <Text style={styles.primaryBtnText}>Entering Hunt...</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={[styles.primaryBtnText, styles.textEnabled]}>
+                        Continue as Guest
+                      </Text>
+                      <View style={[styles.arrowChip, styles.arrowChipEnabled]}>
+                        <Ionicons
+                          name="arrow-forward"
+                          size={s(16)}
+                          color={COLORS.pure_white}
+                        />
+                      </View>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Terms & Privacy Policy Note */}
+                <Text style={styles.termsText}>
+                  By continuing you agree to our{' '}
+                  <Text style={styles.termsLink}>Terms</Text> and{' '}
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </Text>
+              </View>
+            ) : (
+              /* ────────────────────────────────────────────────────────────
+                  TAB 2: ACCOUNT (Unified non-conflicting form body)
+                  ──────────────────────────────────────────────────────────── */
+              <View style={styles.formBody}>
+                {/* Sign In / Create Account Sub-toggle */}
+                <View style={styles.subToggleRow}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setEmailSubMode('signin')
+                      setToastError(null)
+                    }}
+                    style={[
+                      styles.subToggleBtn,
+                      emailSubMode === 'signin' && styles.subToggleBtnActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.subToggleText,
+                        emailSubMode === 'signin' && styles.subToggleTextActive,
+                      ]}
+                    >
+                      Sign in
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss()
+                      setEmailSubMode('signup')
+                      setToastError(null)
+                    }}
+                    style={[
+                      styles.subToggleBtn,
+                      emailSubMode === 'signup' && styles.subToggleBtnActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.subToggleText,
+                        emailSubMode === 'signup' && styles.subToggleTextActive,
+                      ]}
+                    >
+                      Create account
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Display Name (Only for Sign Up) */}
+                {emailSubMode === 'signup' && (
+                  <View style={styles.accountFieldWrap}>
+                    <Text style={styles.sentenceCaseLabel}>Your hunter name</Text>
+                    <View
+                      style={[
+                        styles.tallInputRow,
+                        signUpNameFocused && styles.tallInputRowFocused,
+                      ]}
+                    >
+                      <TextInput
+                        ref={signUpNameInputRef}
+                        style={styles.tallTextInput}
+                        value={signUpName}
+                        onChangeText={setSignUpName}
+                        onFocus={() => {
+                          setSignUpNameFocused(true)
+                          handleInputFocus()
+                        }}
+                        onBlur={() => setSignUpNameFocused(false)}
+                        placeholder="Hunter alias"
+                        placeholderTextColor={COLORS.gray400}
+                        selectionColor={APP_THEME.primary}
+                        cursorColor={APP_THEME.primary}
+                        maxLength={16}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                        autoComplete="off"
+                        importantForAutofill="no"
+                        returnKeyType="next"
+                        blurOnSubmit={false}
+                        onSubmitEditing={() => emailInputRef.current?.focus()}
+                        accessibilityLabel="Your hunter name"
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {/* Email Field */}
+                <View style={styles.accountFieldWrap}>
+                  <Text style={styles.sentenceCaseLabel}>Email address</Text>
                   <View
                     style={[
                       styles.tallInputRow,
-                      nameFocused && styles.tallInputRowFocused,
-                      !isGuestValid && guestName.length > 0 && styles.tallInputRowError,
+                      emailFocused && styles.tallInputRowFocused,
                     ]}
                   >
                     <TextInput
+                      ref={emailInputRef}
                       style={styles.tallTextInput}
-                      value={guestName}
-                      onChangeText={(t) => {
-                        setGuestName(t)
-                        if (toastError) setToastError(null)
+                      value={email}
+                      onChangeText={setEmail}
+                      onFocus={() => {
+                        setEmailFocused(true)
+                        handleInputFocus()
                       }}
-                      onFocus={() => setNameFocused(true)}
-                      onBlur={() => setNameFocused(false)}
-                      placeholder="e.g. CobaltHunter"
+                      onBlur={() => setEmailFocused(false)}
+                      placeholder="hunter@colourhunt.com"
                       placeholderTextColor={COLORS.gray400}
-                      maxLength={16}
-                      autoCapitalize="words"
+                      selectionColor={APP_THEME.primary}
+                      cursorColor={APP_THEME.primary}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                       autoCorrect={false}
-                      autoComplete="username"
-                      textContentType="nickname"
-                      returnKeyType="go"
-                      onSubmitEditing={handleGuestSubmit}
-                      accessibilityLabel="Your hunter name"
+                      autoComplete="email"
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                      onSubmitEditing={() => passwordInputRef.current?.focus()}
+                      accessibilityLabel="Email address"
                     />
+                  </View>
+                </View>
 
-                    {/* Clear Button */}
-                    {guestName.length > 0 && (
+                {/* Password Field with Show/Hide */}
+                <View style={styles.accountFieldWrap}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.sentenceCaseLabel}>Password</Text>
+                    {emailSubMode === 'signin' && (
                       <TouchableOpacity
-                        style={styles.clearBtn}
-                        onPress={() => {
-                          setGuestName('')
-                          triggerHaptic('light')
-                        }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        onPress={() => setToastError('Password reset link sent to your email.')}
                       >
-                        <Ionicons name="close-circle" size={s(18)} color={COLORS.gray400} />
+                        <Text style={styles.forgotPasswordText}>Forgot password?</Text>
                       </TouchableOpacity>
                     )}
-
-                    {/* 40dp Random Dice Chip with 44dp tap target */}
-                    <TouchableOpacity
-                      style={styles.randomChip}
-                      onPress={handleRollRandomName}
-                      activeOpacity={0.75}
-                      hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-                      accessibilityLabel="Randomize hunter name"
-                    >
-                      <Animated.View style={{ transform: [{ rotate: diceSpin }] }}>
-                        <Ionicons name="dice-outline" size={s(18)} color={APP_THEME.primary} />
-                      </Animated.View>
-                      <Text style={styles.randomChipText}>Random</Text>
-                    </TouchableOpacity>
                   </View>
-
-                  {/* Inline Error Message */}
-                  {!isGuestValid && guestName.length > 0 && (
-                    <View style={styles.inlineErrorRow}>
-                      <Ionicons name="alert-circle-outline" size={s(14)} color={COLORS.red600} />
-                      <Text style={styles.inlineErrorText}>{nameValidation.error}</Text>
-                    </View>
-                  )}
-
-                  {/* Shortened Blue Info Note */}
-                  <View style={styles.blueInfoNote}>
-                    <Ionicons name="information-circle" size={s(18)} color={ACCENT.blue.base} />
-                    <Text style={styles.blueInfoText}>
-                      No password needed. Link an email anytime in Settings.
-                    </Text>
+                  <View
+                    style={[
+                      styles.tallInputRow,
+                      passFocused && styles.tallInputRowFocused,
+                    ]}
+                  >
+                    <TextInput
+                      ref={passwordInputRef}
+                      style={styles.tallTextInput}
+                      value={password}
+                      onChangeText={setPassword}
+                      onFocus={() => {
+                        setPassFocused(true)
+                        handleInputFocus()
+                      }}
+                      onBlur={() => setPassFocused(false)}
+                      placeholder="••••••••"
+                      placeholderTextColor={COLORS.gray400}
+                      selectionColor={APP_THEME.primary}
+                      cursorColor={APP_THEME.primary}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="password"
+                      returnKeyType="go"
+                      blurOnSubmit={true}
+                      onSubmitEditing={handleEmailSubmit}
+                      accessibilityLabel="Password"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword((prev) => !prev)}
+                      style={styles.clearBtn}
+                      accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={s(20)}
+                        color={COLORS.gray600}
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
-              ) : (
-                /* ────────────────────────────────────────────────────────────
-                    TAB 2: ACCOUNT (Same components, spacing & Google option)
-                    ──────────────────────────────────────────────────────────── */
-                <ScrollView
-                  style={styles.accountFormScroll}
-                  contentContainerStyle={styles.formBody}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                  keyboardDismissMode="on-drag"
-                  bounces={false}
-                  nestedScrollEnabled={true}
+
+                {/* Primary Action Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.primaryBtn,
+                    !isAccountValid && styles.btnDisabled,
+                    isAccountValid && styles.btnEnabled,
+                  ]}
+                  onPress={handleEmailSubmit}
+                  disabled={!isAccountValid || loading}
+                  activeOpacity={0.88}
                 >
-                  {/* Sign In / Create Account Sub-toggle */}
-                  <View style={styles.subToggleRow}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setEmailSubMode('signin')
-                        setToastError(null)
-                      }}
-                      style={[
-                        styles.subToggleBtn,
-                        emailSubMode === 'signin' && styles.subToggleBtnActive,
-                      ]}
-                    >
+                  {loading ? (
+                    <View style={styles.loadingRow}>
+                      <ActivityIndicator color={COLORS.pure_white} size="small" />
+                      <Text style={styles.primaryBtnText}>Getting ready...</Text>
+                    </View>
+                  ) : (
+                    <>
                       <Text
                         style={[
-                          styles.subToggleText,
-                          emailSubMode === 'signin' && styles.subToggleTextActive,
+                          styles.primaryBtnText,
+                          isAccountValid ? styles.textEnabled : styles.textDisabled,
                         ]}
                       >
-                        Sign in
+                        {emailSubMode === 'signin' ? 'Sign In' : 'Create Account'}
                       </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => {
-                        setEmailSubMode('signup')
-                        setToastError(null)
-                      }}
-                      style={[
-                        styles.subToggleBtn,
-                        emailSubMode === 'signup' && styles.subToggleBtnActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.subToggleText,
-                          emailSubMode === 'signup' && styles.subToggleTextActive,
-                        ]}
-                      >
-                        Create account
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Display Name (Only for Sign Up) */}
-                  {emailSubMode === 'signup' && (
-                    <View style={styles.accountFieldWrap}>
-                      <Text style={styles.sentenceCaseLabel}>Your hunter name</Text>
                       <View
                         style={[
-                          styles.tallInputRow,
-                          signUpNameFocused && styles.tallInputRowFocused,
+                          styles.arrowChip,
+                          isAccountValid ? styles.arrowChipEnabled : styles.arrowChipDisabled,
                         ]}
                       >
-                        <TextInput
-                          style={styles.tallTextInput}
-                          value={signUpName}
-                          onChangeText={setSignUpName}
-                          onFocus={() => setSignUpNameFocused(true)}
-                          onBlur={() => setSignUpNameFocused(false)}
-                          placeholder="Hunter alias"
-                          placeholderTextColor={COLORS.gray400}
-                          maxLength={16}
-                          autoComplete="username"
-                          textContentType="nickname"
-                          accessibilityLabel="Your hunter name"
+                        <Ionicons
+                          name="arrow-forward"
+                          size={s(16)}
+                          color={isAccountValid ? COLORS.pure_white : COLORS.gray500}
                         />
                       </View>
-                    </View>
+                    </>
                   )}
+                </TouchableOpacity>
 
-                  {/* Email Field */}
-                  <View style={styles.accountFieldWrap}>
-                    <Text style={styles.sentenceCaseLabel}>Email address</Text>
-                    <View
-                      style={[
-                        styles.tallInputRow,
-                        emailFocused && styles.tallInputRowFocused,
-                      ]}
-                    >
-                      <TextInput
-                        style={styles.tallTextInput}
-                        value={email}
-                        onChangeText={setEmail}
-                        onFocus={() => setEmailFocused(true)}
-                        onBlur={() => setEmailFocused(false)}
-                        placeholder="hunter@colourhunt.com"
-                        placeholderTextColor={COLORS.gray400}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        autoComplete="email"
-                        textContentType="emailAddress"
-                        returnKeyType="next"
-                        accessibilityLabel="Email address"
-                      />
-                    </View>
-                  </View>
-
-                  {/* Password Field with Show/Hide */}
-                  <View style={styles.accountFieldWrap}>
-                    <View style={styles.labelRow}>
-                      <Text style={styles.sentenceCaseLabel}>Password</Text>
-                      {emailSubMode === 'signin' && (
-                        <TouchableOpacity
-                          onPress={() => setToastError('Password reset link sent to your email.')}
-                        >
-                          <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <View
-                      style={[
-                        styles.tallInputRow,
-                        passFocused && styles.tallInputRowFocused,
-                      ]}
-                    >
-                      <TextInput
-                        style={styles.tallTextInput}
-                        value={password}
-                        onChangeText={setPassword}
-                        onFocus={() => setPassFocused(true)}
-                        onBlur={() => setPassFocused(false)}
-                        placeholder="••••••••"
-                        placeholderTextColor={COLORS.gray400}
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoComplete="password"
-                        textContentType="password"
-                        returnKeyType="go"
-                        onSubmitEditing={handleEmailSubmit}
-                        accessibilityLabel="Password"
-                      />
-                      <TouchableOpacity
-                        onPress={() => setShowPassword((prev) => !prev)}
-                        style={styles.clearBtn}
-                        accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        <Ionicons
-                          name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                          size={s(20)}
-                          color={COLORS.gray600}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* Divider "or" */}
-                  <View style={styles.dividerRow}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>or</Text>
-                    <View style={styles.dividerLine} />
-                  </View>
-
-                  {/* Continue with Google */}
-                  <TouchableOpacity
-                    style={styles.googleBtn}
-                    onPress={handleGoogleSignIn}
-                    activeOpacity={0.85}
-                  >
-                    <GoogleGIcon size={s(20)} />
-                    <Text style={styles.googleBtnText}>Continue with Google</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              )}
-
-              {/* Spacer so guest tab content doesn't collide with sticky CTA */}
-              {authMode === 'guest' && <View style={{ height: vs(96) }} />}
-            </Animated.View>
-          </View>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            STICKY BOTTOM CTA AND FOOTER (Same component as Start Lobby)
-            ══════════════════════════════════════════════════════════════════ */}
-        <View style={[styles.stickyFooter, { paddingBottom: insets.bottom + vs(10) }]}>
-          {/* Terms & Privacy Policy Note (Replaces shield & tagline) */}
-          <Text style={styles.termsText}>
-            By continuing you agree to our{' '}
-            <Text style={styles.termsLink}>Terms</Text> and{' '}
-            <Text style={styles.termsLink}>Privacy Policy</Text>
-          </Text>
-
-          {/* Primary Action Button */}
-          <TouchableOpacity
-            style={[
-              styles.primaryBtn,
-              !isCurrentFormValid && styles.btnDisabled,
-              isCurrentFormValid && styles.btnEnabled,
-            ]}
-            onPress={authMode === 'guest' ? handleGuestSubmit : handleEmailSubmit}
-            disabled={!isCurrentFormValid || loading}
-            activeOpacity={0.88}
-          >
-            {loading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator color={COLORS.pure_white} size="small" />
-                <Text style={styles.primaryBtnText}>Getting ready...</Text>
-              </View>
-            ) : (
-              <>
-                <Text
-                  style={[
-                    styles.primaryBtnText,
-                    isCurrentFormValid ? styles.textEnabled : styles.textDisabled,
-                  ]}
-                >
-                  {authMode === 'guest'
-                    ? 'Start Hunting as Guest'
-                    : emailSubMode === 'signin'
-                    ? 'Sign In'
-                    : 'Create Account'}
-                </Text>
-                {/* Arrow Chip on the Right (Same as Start Lobby) */}
-                <View
-                  style={[
-                    styles.arrowChip,
-                    isCurrentFormValid ? styles.arrowChipEnabled : styles.arrowChipDisabled,
-                  ]}
-                >
-                  <Ionicons
-                    name="arrow-forward"
-                    size={s(16)}
-                    color={isCurrentFormValid ? COLORS.pure_white : COLORS.gray500}
-                  />
+                {/* Divider "or" */}
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or</Text>
+                  <View style={styles.dividerLine} />
                 </View>
-              </>
+
+                {/* Continue with Google */}
+                <TouchableOpacity
+                  style={styles.googleBtn}
+                  onPress={handleGoogleSignIn}
+                  activeOpacity={0.85}
+                >
+                  <GoogleGIcon size={s(20)} />
+                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                </TouchableOpacity>
+
+                {/* Continue as Guest option from Account tab */}
+                <TouchableOpacity
+                  style={styles.guestLinkBtn}
+                  onPress={handleGuestSubmit}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="person-outline" size={s(16)} color={APP_THEME.primary} />
+                  <Text style={styles.guestLinkText}>Continue as Guest</Text>
+                </TouchableOpacity>
+
+                {/* Terms & Privacy Policy Note */}
+                <Text style={styles.termsText}>
+                  By continuing you agree to our{' '}
+                  <Text style={styles.termsLink}>Terms</Text> and{' '}
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </Text>
+              </View>
             )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+          </Animated.View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   )
 }
@@ -1112,6 +1203,14 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: HERO_TOP,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: COLORS.pure_white,
+  },
+  mainScrollView: {
+    flex: 1,
+    backgroundColor: COLORS.pure_white,
   },
   scrollContent: {
     flexGrow: 1,
@@ -1124,18 +1223,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: HERO_TOP,
-    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   blurCircleWrap: {
     position: 'absolute',
   },
   topWordmarkRow: {
     alignItems: 'center',
-    paddingTop: vs(10),
+    paddingTop: vs(12),
+    paddingBottom: vs(6),
     zIndex: 10,
   },
   navWordmark: {
-    fontSize: ms(22),
+    fontSize: ms(24),
     fontWeight: '900',
     color: COLORS.pure_white,
     letterSpacing: -0.5,
@@ -1144,46 +1244,28 @@ const styles = StyleSheet.create({
     color: COLORS.yellow500,
   },
 
-  heroExpandingBody: {
+  heroLogoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    position: 'relative',
-    marginTop: vs(-6),
-    paddingBottom: vs(34),
-  },
-  headlineContainer: {
-    alignItems: 'center',
-    marginTop: vs(6),
-  },
-  heroTitle: {
-    fontSize: ms(21),
-    fontWeight: '900',
-    color: COLORS.pure_white,
-    letterSpacing: -0.4,
-  },
-  heroTitleAccent: {
-    fontSize: ms(21),
-    fontWeight: '900',
-    color: COLORS.yellow500,
-    letterSpacing: -0.4,
+    marginTop: vs(8),
+    zIndex: 5,
   },
 
   // ── White Sheet ───────────────────────────────────────────────────────────
   sheet: {
-    flex: 1,
+    flexGrow: 1, // fill leftover space but never compress below content height
     backgroundColor: COLORS.pure_white,
     borderTopLeftRadius: s(28),
     borderTopRightRadius: s(28),
-    marginTop: vs(-60),
-    paddingTop: vs(18),
+    marginTop: vs(-14),
+    paddingTop: vs(20),
     paddingHorizontal: s(20),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: s(14),
-    elevation: 18,
-    minHeight: vs(380),
+    shadowOpacity: 0.1,
+    shadowRadius: s(12),
+    elevation: 8,
+    minHeight: vs(340),
   },
 
   // ── Account form inner scroll (email tab only) ─────────────────────────────
@@ -1260,7 +1342,7 @@ const styles = StyleSheet.create({
   // ── Form Body ─────────────────────────────────────────────────────────────
   formBody: {
     width: '100%',
-    paddingBottom: vs(96), // clears sticky CTA footer when scrolled to bottom
+    paddingBottom: vs(12),
   },
   labelRow: {
     flexDirection: 'row',
@@ -1279,9 +1361,9 @@ const styles = StyleSheet.create({
     color: COLORS.gray500,
   },
 
-  // ── 56dp Tall Input Row with Focus Glow ───────────────────────────────────
+  // ── 54dp Tall Input Row with Rock-Solid Focus (No layout re-measurement) ────
   tallInputRow: {
-    height: vs(56), // 56dp tall
+    height: vs(54),
     backgroundColor: COLORS.gray50,
     borderWidth: 1.5,
     borderColor: COLORS.gray200,
@@ -1291,16 +1373,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tallInputRowFocused: {
-    borderColor: APP_THEME.primary, // 2dp red border
-    borderWidth: 2,
-    shadowColor: APP_THEME.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.22,
-    shadowRadius: s(6),
-    elevation: 3,
+    borderColor: APP_THEME.primary,
+    borderWidth: 1.5, // Constant 1.5dp prevents Android requestLayout() focus jumping
+    backgroundColor: COLORS.pure_white,
   },
   tallInputRowError: {
     borderColor: COLORS.red500,
+    borderWidth: 1.5,
   },
   tallTextInput: {
     flex: 1,
@@ -1308,6 +1387,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray900,
     paddingVertical: 0,
+    paddingHorizontal: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    height: '100%',
   },
   clearBtn: {
     padding: s(6),
@@ -1315,7 +1398,7 @@ const styles = StyleSheet.create({
 
   // ── 40dp Random Dice Chip with 44dp Tap Area ──────────────────────────────
   randomChip: {
-    height: vs(40), // 40dp tall
+    height: vs(40),
     minWidth: s(84),
     backgroundColor: ACCENT.red.light,
     borderRadius: s(10),
@@ -1439,29 +1522,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.gray800,
   },
-
-  // ── Sticky Footer (Matches Start Lobby in StickyFooterButton.tsx) ─────────
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: APP_THEME.surface,
-    borderTopWidth: 1,
-    borderTopColor: APP_THEME.surfaceBorder,
-    paddingHorizontal: s(16),
-    paddingTop: vs(10),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 8,
+  guestLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: s(6),
+    marginTop: vs(12),
+    paddingVertical: vs(8),
   },
+  guestLinkText: {
+    fontSize: ms(13),
+    fontWeight: '700',
+    color: APP_THEME.primary,
+  },
+
+  // ── Terms & Primary Buttons ───────────────────────────────────────────────
   termsText: {
-    fontSize: ms(12), // 12-13sp, 4.5:1 contrast
+    fontSize: ms(12),
     color: COLORS.gray600,
     textAlign: 'center',
-    marginBottom: vs(8),
+    marginTop: vs(12),
+    marginBottom: vs(4),
     lineHeight: ms(16),
   },
   termsLink: {
@@ -1472,9 +1553,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: s(12), // matching Start Lobby radius
+    borderRadius: s(12),
     paddingVertical: vs(14),
     paddingHorizontal: s(20),
+    marginTop: vs(18),
   },
   btnEnabled: {
     backgroundColor: APP_THEME.primary,

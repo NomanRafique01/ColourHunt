@@ -436,8 +436,10 @@ export default function AuthScreen() {
     })
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
-      setKeyboardVisible(false)
       scrollToBottomTarget()
+      setTimeout(() => {
+        setKeyboardVisible(false)
+      }, 250)
     })
 
     return () => {
@@ -491,6 +493,9 @@ export default function AuthScreen() {
     triggerHaptic('light')
     Keyboard.dismiss()
     scrollToBottomTarget()
+    setTimeout(() => {
+      setKeyboardVisible(false)
+    }, 250)
     setAuthMode(mode)
     setToastError(null)
 
@@ -657,6 +662,7 @@ export default function AuthScreen() {
               paddingBottom: heroHeight + vs(60) + Math.max(insets.bottom, vs(20)),
             },
           ]}
+          scrollEnabled={keyboardVisible}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="none"
@@ -1171,16 +1177,6 @@ export default function AuthScreen() {
                 >
                   <GoogleGIcon size={s(20)} />
                   <Text style={styles.googleBtnText}>Continue with Google</Text>
-                </TouchableOpacity>
-
-                {/* Continue as Guest option from Account tab */}
-                <TouchableOpacity
-                  style={styles.guestLinkBtn}
-                  onPress={handleGuestSubmit}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="person-outline" size={s(16)} color={APP_THEME.primary} />
-                  <Text style={styles.guestLinkText}>Continue as Guest</Text>
                 </TouchableOpacity>
 
                 {/* Terms & Privacy Policy Note */}

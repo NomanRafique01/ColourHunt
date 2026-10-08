@@ -4,13 +4,15 @@
     "slug": "color-hunt",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "colourhunt",
     "icon": "./assets/app-icon.png",
     "splash": {
       "backgroundColor": "#F0192D"
     },
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nomanrafique.colorhunt"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,13 +22,27 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.nomanrafique.colorhunt"
+      "package": "com.nomanrafique.colorhunt",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "colourhunt"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-web-browser"
     ]
   }
 }
+

@@ -13,6 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -342,7 +343,26 @@ export default function AuthScreen() {
   const setDisplayName = usePlayerStore((s) => s.setDisplayName)
   const setIsAnonymous = usePlayerStore((s) => s.setIsAnonymous)
 
-  const heroHeight = IS_SMALL_SCREEN ? vs(220) : vs(240)
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions()
+  const isCompactScreen = screenHeight < 720
+
+  // Dynamic responsive hero height: adapts across phones (budget to flagship)
+  const heroHeight = Math.round(
+    Math.max(180, Math.min(252, screenHeight * 0.295))
+  )
+
+  // Calculate dynamic scale for LoginHuntArt:
+  // Base art dimensions: 190w x 156h
+  const ART_BASE_HEIGHT = 156
+  const wordmarkSpace = isCompactScreen ? 36 : 44
+  const sheetOverlap = isCompactScreen ? 10 : 14
+  const availableArtHeight = heroHeight - wordmarkSpace - sheetOverlap
+  // Scale art to fit cleanly with proportional margins on any display
+  const artScale = Math.max(
+    0.70,
+    Math.min(1.05, Number(((availableArtHeight * 0.88) / ART_BASE_HEIGHT).toFixed(2)))
+  )
+
   const [authMode, setAuthMode] = useState<'guest' | 'email'>('guest')
   // Email Submode: 'signin' | 'signup'
   const [emailSubMode, setEmailSubMode] = useState<'signin' | 'signup'>('signin')
@@ -631,7 +651,7 @@ export default function AuthScreen() {
 
   // Tab indicator slide
   const TAB_CONTAINER_PADDING = s(4)
-  const TAB_WIDTH = (SCREEN_W - s(40) - TAB_CONTAINER_PADDING * 2) / 2
+  const TAB_WIDTH = (screenWidth - s(40) - TAB_CONTAINER_PADDING * 2) / 2
   const indicatorTranslateX = tabSlideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, TAB_WIDTH],
@@ -680,7 +700,7 @@ export default function AuthScreen() {
           >
             {/* SVG Full-Bleed Gradient */}
             <Svg
-              width={SCREEN_W}
+              width={screenWidth}
               height={heroHeight}
               style={[StyleSheet.absoluteFill, { left: 0 }]}
               preserveAspectRatio="none"
@@ -692,25 +712,37 @@ export default function AuthScreen() {
                   <Stop offset="1" stopColor={HERO_BOT} stopOpacity="1" />
                 </LinearGradient>
               </Defs>
-              <Rect x="0" y="0" width={SCREEN_W} height={heroHeight} fill="url(#heroGrad)" />
+              <Rect x="0" y="0" width={screenWidth} height={heroHeight} fill="url(#heroGrad)" />
             </Svg>
 
             {/* 4 Large Fake Blur Radial-Gradient Circles */}
             <FakeBlurAtmosphere isFocused={isFocused} reduceMotion={reduceMotion} />
 
             {/* Wordmark Header */}
-            <View style={styles.topWordmarkRow}>
-              <Text style={styles.navWordmark}>
+            <View
+              style={[
+                styles.topWordmarkRow,
+                isCompactScreen && styles.topWordmarkRowCompact,
+              ]}
+            >
+              <Text style={[styles.navWordmark, isCompactScreen && styles.navWordmarkCompact]}>
                 Colour<Text style={styles.navWordmarkAccent}>Hunt</Text>
               </Text>
             </View>
 
             {/* "The Hunt" Animated Hero Art / Logo */}
-            <View style={styles.heroLogoContainer} pointerEvents="box-none">
+            <View
+              style={[
+                styles.heroLogoContainer,
+                { paddingBottom: sheetOverlap },
+              ]}
+              pointerEvents="box-none"
+            >
               <LoginHuntArt
                 isFocused={isFocused}
                 reduceMotion={reduceMotion}
                 isKeyboardVisible={keyboardVisible && authMode === 'email'}
+                scale={artScale}
               />
             </View>
           </Animated.View>
@@ -722,6 +754,7 @@ export default function AuthScreen() {
             style={[
               styles.sheet,
               {
+                marginTop: -sheetOverlap,
                 paddingBottom: Math.max(insets.bottom, vs(20)) + vs(16),
                 transform: [{ translateY: sheetSlideAnim }],
               },
@@ -1225,20 +1258,27 @@ const styles = StyleSheet.create({
     paddingBottom: vs(6),
     zIndex: 10,
   },
+  topWordmarkRowCompact: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
   navWordmark: {
     fontSize: ms(24),
     fontWeight: '900',
     color: COLORS.pure_white,
     letterSpacing: -0.5,
   },
+  navWordmarkCompact: {
+    fontSize: ms(21),
+  },
   navWordmarkAccent: {
     color: COLORS.yellow500,
   },
 
   heroLogoContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: vs(8),
     zIndex: 5,
   },
 

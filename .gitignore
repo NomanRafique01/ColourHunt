@@ -43,3 +43,7 @@ assets/*recolour*
 # generated native folders
 /ios
 /android
+
+# skills
+.agents/
+.skills/

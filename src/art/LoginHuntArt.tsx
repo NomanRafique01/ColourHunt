@@ -4,7 +4,7 @@
  */
 
 import React, { memo, useCallback, useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import Animated, {
   cancelAnimation,
   Easing,
@@ -78,13 +78,17 @@ export const LoginHuntArt = memo(function LoginHuntArt({
   isFocused = true,
   reduceMotion = false,
   isKeyboardVisible = false,
-  scale: _scale = 1,
+  scale: propScale,
 }: {
   isFocused?: boolean
   reduceMotion?: boolean
   isKeyboardVisible?: boolean
   scale?: number
 }) {
+  const { height: screenHeight } = useWindowDimensions()
+  // Responsive auto-scale based on screen height (844dp reference base)
+  const autoScale = Math.max(0.70, Math.min(1.05, Number((screenHeight / 844).toFixed(2))))
+  const scale = propScale ?? autoScale
   const [targetIndex, setTargetIndex] = useState(7) // Blue start
   const [collected, setCollected] = useState<number[]>([])
   const [gridIndices, setGridIndices] = useState<number[]>(() => {
@@ -251,12 +255,28 @@ export const LoginHuntArt = memo(function LoginHuntArt({
 
   const rootStyle = useAnimatedStyle(() => ({
     opacity: kbOpacity.value,
-    transform: [{ scale: kbScale.value }, { translateY: floatAnim.value }],
+    transform: [
+      { scale: kbScale.value * scale },
+      { translateY: floatAnim.value * scale },
+    ],
   }))
 
+  const scaledWidth = Math.round(190 * scale)
+  const scaledHeight = Math.round(156 * scale)
+
   return (
-    <Animated.View style={[styles.box, rootStyle]} accessible={false} importantForAccessibility="no-hide-descendants">
-      <Pressable onPress={handleHeroTap} style={StyleSheet.absoluteFill} />
+    <View
+      style={[
+        styles.scaleWrapper,
+        {
+          width: scaledWidth,
+          height: scaledHeight,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      <Animated.View style={[styles.box, rootStyle]} accessible={false} importantForAccessibility="no-hide-descendants">
+        <Pressable onPress={handleHeroTap} style={StyleSheet.absoluteFill} />
 
       {/* Background Atmosphere Glow & Drifting Dots */}
       <Svg width={190} height={148} style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -370,10 +390,15 @@ export const LoginHuntArt = memo(function LoginHuntArt({
         </Animated.View>
       </Animated.View>
     </Animated.View>
+  </View>
   )
 })
 
 const styles = StyleSheet.create({
+  scaleWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   box: { width: 190, height: 156, alignItems: 'center', justifyContent: 'center' },
   board: {
     width: BOARD_SIZE,

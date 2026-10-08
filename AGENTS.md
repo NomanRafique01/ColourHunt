@@ -39,3 +39,11 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## Responsive UI & Dynamic Scaling Standards
+
+Always adhere to the `.agents/skills/responsive-mobile-ui` and `.agents/skills/dynamic-svg-art` skills whenever designing, creating, or refactoring screens, components, buttons, labels, vector art, or theme assets:
+- **Never hardcode static heights** for hero sections, cards, or art containers.
+- **Always use `useWindowDimensions()`** instead of module-level `Dimensions.get('window')`.
+- **Implement the Scaled-Wrapper + Center-Transform pattern** for all SVGs and visual art so layouts naturally adapt across all screen sizes (budget 16:9/18:9 Androids like Huawei, standard Samsung phones, tablets, and iPhones) without clipping, overflowing, or colliding with adjacent UI elements.
+- **Verify responsive behavior** across compact screen heights (< 680dp), standard phones (800-844dp), and tall flagships (> 880dp).

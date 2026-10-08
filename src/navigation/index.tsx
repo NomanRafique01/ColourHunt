@@ -9,6 +9,7 @@ import { APP_THEME, COLORS } from '../constants/colors'
 
 // Screens
 import LoadingScreen from '../screens/LoadingScreen'
+import AuthScreen from '../screens/AuthScreen'
 import HomeScreen from '../screens/HomeScreen'
 import RoomsScreen from '../screens/RoomsScreen'
 import HistoryScreen from '../screens/HistoryScreen'
@@ -131,6 +132,11 @@ export function RootNavigator() {
       <Stack.Screen
         name="Loading"
         component={LoadingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Auth"
+        component={AuthScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

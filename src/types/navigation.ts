@@ -12,6 +12,7 @@ export type TabParamList = {
 // Stack param list (game flow screens)
 export type RootStackParamList = {
   Loading: undefined
+  Auth: undefined
   MainTabs: undefined
   CreateRoom: undefined
   JoinRoom: undefined

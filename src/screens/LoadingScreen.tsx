@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../types/navigation'
 import { APP_THEME, COLORS } from '../constants/colors'
 import { s, vs, ms, w, h } from '../utils/scale'
 import { SpectrumLensLogo } from '../../assets/svg/SpectrumLensLogo'
+import { usePlayerStore } from '../store/player'
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Loading'>
 
@@ -15,14 +16,38 @@ const loadingArtwork = require('../../assets/loading-artwork.png')
 
 export default function LoadingScreen() {
   const navigation = useNavigation<NavigationProp>()
+  const setUserId = usePlayerStore((s) => s.setUserId)
+  const setDisplayName = usePlayerStore((s) => s.setDisplayName)
+  const setIsAnonymous = usePlayerStore((s) => s.setIsAnonymous)
 
   useEffect(() => {
-    const transition = setTimeout(() => navigation.replace('MainTabs'), 2500)
+    let mounted = true
+    const timer = setTimeout(async () => {
+      try {
+        const { getActiveSession } = require('../lib/api/authService')
+        const res = await getActiveSession()
+        if (!mounted) return
+        if (res?.success && res?.user) {
+          // Hydrate the store before navigating
+          setUserId(res.user.id)
+          setDisplayName(res.profile?.displayName || res.user.user_metadata?.display_name || res.user.user_metadata?.full_name || 'Hunter')
+          setIsAnonymous(res.user.is_anonymous ?? false)
+          navigation.replace('MainTabs')
+        } else {
+          navigation.replace('Auth')
+        }
+      } catch {
+        if (!mounted) return
+        navigation.replace('Auth')
+      }
+    }, 2500)
 
     return () => {
-      clearTimeout(transition)
+      mounted = false
+      clearTimeout(timer)
     }
-  }, [navigation])
+  }, [navigation, setUserId, setDisplayName, setIsAnonymous])
+
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -36,7 +36,7 @@ function safeHaptic() {
   try {
     const Haptics = require('expo-haptics')
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-  } catch {}
+  } catch { }
 }
 
 // 4x4 Grid layout constants (Compact best-fit: 26dp cell, 131dp board)
@@ -78,10 +78,12 @@ export const LoginHuntArt = memo(function LoginHuntArt({
   isFocused = true,
   reduceMotion = false,
   isKeyboardVisible = false,
+  scale: _scale = 1,
 }: {
   isFocused?: boolean
   reduceMotion?: boolean
   isKeyboardVisible?: boolean
+  scale?: number
 }) {
   const [targetIndex, setTargetIndex] = useState(7) // Blue start
   const [collected, setCollected] = useState<number[]>([])
@@ -154,7 +156,7 @@ export const LoginHuntArt = memo(function LoginHuntArt({
   useAnimatedReaction(
     () => progress.value,
     (curr, prev) => {
-      if (prev !== null) {
+      if (prev !== null && !isKeyboardVisible) {
         if (curr < prev && prev > 5000) runOnJS(advanceLoop)()
         if (prev < HUNT_TIMELINE.SNAP_START && curr >= HUNT_TIMELINE.SNAP_START) runOnJS(safeHaptic)()
       }

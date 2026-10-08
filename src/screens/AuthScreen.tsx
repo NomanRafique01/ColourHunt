@@ -360,7 +360,6 @@ export default function AuthScreen() {
   const [passFocused, setPassFocused] = useState(false)
   const [signUpNameFocused, setSignUpNameFocused] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
-  const isScrolledUpRef = useRef(false)
   const authModeRef = useRef(authMode)
   useEffect(() => {
     authModeRef.current = authMode
@@ -409,15 +408,11 @@ export default function AuthScreen() {
   // ── Move window up when keyboard appears (Account tab only; Guest tab stays in place) ─
   const scrollToTopTarget = useCallback(() => {
     if (authModeRef.current === 'guest') return
-    if (isScrolledUpRef.current) return
-    isScrolledUpRef.current = true
     const targetY = Math.max(0, heroHeight - vs(15))
     scrollViewRef.current?.scrollTo({ y: targetY, animated: true })
   }, [heroHeight])
 
   const scrollToBottomTarget = useCallback(() => {
-    if (!isScrolledUpRef.current) return
-    isScrolledUpRef.current = false
     scrollViewRef.current?.scrollTo({ y: 0, animated: true })
   }, [])
 
@@ -659,14 +654,14 @@ export default function AuthScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {
-              paddingBottom: heroHeight + vs(60) + Math.max(insets.bottom, vs(20)),
+              paddingBottom: keyboardVisible ? Math.max(0, heroHeight - vs(15)) : 0,
             },
           ]}
           scrollEnabled={keyboardVisible}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="none"
-          automaticallyAdjustKeyboardInsets={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           bounces={false}
           overScrollMode="never"
           removeClippedSubviews={false}
